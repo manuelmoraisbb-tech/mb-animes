@@ -1,44 +1,44 @@
-import { HomeHero } from '@/components/home-hero'
+import { HomeHero, type HeroSlide } from '@/components/home-hero'
 import { AnimeRow } from '@/components/anime-row'
 import {
-  getCatalogStats,
   getDailyPicks,
   getLongestSeries,
   getMultiSeason,
-  getPosterWall,
   getShortSeries,
   toSummary,
 } from '@/lib/catalog'
 
-export const revalidate = 3600
-
 export default function HomePage() {
-  const picks = getDailyPicks(19)
-  const [featured, ...rest] = picks
+  const picks = getDailyPicks(20)
+  const slides: HeroSlide[] = picks.slice(0, 5).map((anime) => {
+    const first = anime.seasons[0]
+    return {
+      ...toSummary(anime),
+      firstEpisodeHref: first ? `/assistir/${anime.slug}/${first.number}/${first.episodes[0].number}` : null,
+    }
+  })
 
   return (
-    <div className="flex flex-col gap-12">
-      <HomeHero featured={featured} wall={getPosterWall()} stats={getCatalogStats()} />
+    <div className="flex flex-col gap-12 pb-4">
+      <HomeHero slides={slides} />
       <AnimeRow
         title="Escolhas de hoje"
-        description="Uma seleção nova a cada dia."
-        animes={rest.map(toSummary)}
-        href="/catalogo"
+        subtitle="Uma seleção nova a cada dia."
+        animes={picks.slice(5).map(toSummary)}
       />
       <AnimeRow
         title="Para maratonar"
-        description="As séries com mais episódios do catálogo."
-        animes={getLongestSeries(18).map(toSummary)}
+        subtitle="As séries com mais episódios do catálogo."
+        animes={getLongestSeries(20).map(toSummary)}
       />
       <AnimeRow
         title="Várias temporadas"
-        description="Histórias que continuam."
-        animes={getMultiSeason(18).map(toSummary)}
+        animes={getMultiSeason(20).map(toSummary)}
       />
       <AnimeRow
-        title="Rapidinhos"
-        description="Até 13 episódios — dá pra terminar no fim de semana."
-        animes={getShortSeries(18).map(toSummary)}
+        title="Curtinhos"
+        subtitle="Até 13 episódios, dá pra ver em um fim de semana."
+        animes={getShortSeries(20).map(toSummary)}
       />
     </div>
   )

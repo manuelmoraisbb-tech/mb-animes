@@ -1,109 +1,139 @@
-import Link from 'next/link'
+'use client'
+
+import { useState } from 'react'
 import Image from 'next/image'
-import { Play, LayoutGrid } from 'lucide-react'
-import type { Anime } from '@/lib/catalog'
+import Link from 'next/link'
+import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
 
-function PosterWall({ images }: { images: string[] }) {
-  const columns = 7
-  const perColumn = 6
-  const cols = Array.from({ length: columns }, (_, c) =>
-    Array.from({ length: perColumn }, (_, r) => images[(c * perColumn + r) % images.length]),
-  )
-
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 flex -rotate-6 scale-125 gap-3 opacity-35"
-    >
-      {cols.map((col, i) => (
-        <div
-          key={i}
-          data-reverse={i % 2 === 1}
-          className="poster-column flex w-1/4 shrink-0 flex-col gap-3 md:w-[14%]"
-          style={{ ['--drift-duration' as string]: `${55 + (i % 3) * 12}s` }}
-        >
-          {[...col, ...col].map((src, j) => (
-            <div key={j} className="relative aspect-[2/3] shrink-0 overflow-hidden rounded-md bg-card">
-              <Image src={src} alt="" fill sizes="180px" className="object-cover" />
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  )
+export type HeroSlide = {
+  slug: string
+  title: string
+  poster: string
+  seasonCount: number
+  totalEpisodes: number
+  firstEpisodeHref: string | null
 }
 
-export function HomeHero({
-  featured,
-  wall,
-  stats,
-}: {
-  featured: Anime
-  wall: string[]
-  stats: { animes: number; episodes: number }
-}) {
-  const firstSeason = featured.seasons[0]
-  const firstEpisode = firstSeason?.episodes[0]
+const DURATION_MS = 8000
+
+export function HomeHero({ slides }: { slides: HeroSlide[] }) {
+  const [index, setIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
+
+  if (slides.length === 0) return null
+  const slide = slides[index]
+  const go = (next: number) => setIndex((next + slides.length) % slides.length)
 
   return (
-    <section className="relative isolate overflow-hidden border-b">
-      <PosterWall images={wall} />
-      <div className="absolute inset-0 -z-0 bg-gradient-to-r from-background via-background/90 to-background/40" />
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent" />
+    <section
+      aria-roledescription="carrossel"
+      aria-label="Destaques"
+      className="relative isolate overflow-hidden"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      {slides.map((s, i) => (
+        <div
+          key={s.slug}
+          aria-hidden={i !== index}
+          className={`absolute inset-0 -z-10 transition-opacity duration-700 ${i === index ? 'opacity-100' : 'opacity-0'}`}
+        >
+          <Image
+            src={s.poster}
+            alt=""
+            fill
+            priority={i === 0}
+            sizes="100vw"
+            className="scale-110 object-cover opacity-40 blur-2xl"
+          />
+          <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
+            <Image
+              src={s.poster}
+              alt=""
+              fill
+              priority={i === 0}
+              sizes="50vw"
+              className="object-cover object-top [mask-image:linear-gradient(to_right,transparent,black_40%)]"
+            />
+          </div>
+          <Image
+            src={s.poster}
+            alt=""
+            fill
+            priority={i === 0}
+            sizes="100vw"
+            className="object-cover object-top md:hidden"
+          />
+        </div>
+      ))}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-background via-background/60 to-transparent md:bg-gradient-to-r md:from-background md:via-background/80" />
 
-      <div className="relative mx-auto flex max-w-7xl flex-col gap-10 px-4 py-16 md:flex-row md:items-center md:justify-between md:px-6 md:py-24">
-        <div className="flex max-w-xl flex-col gap-6">
-          <p className="text-sm font-medium uppercase tracking-widest text-primary">
-            {`${stats.animes} animes · ${stats.episodes.toLocaleString('pt-BR')} episódios`}
-          </p>
-          <h1 className="font-heading text-4xl font-bold leading-tight text-balance md:text-6xl">
-            Seu próximo anime favorito começa aqui.
-          </h1>
-          <p className="text-base leading-relaxed text-muted-foreground md:text-lg">
-            Escolha uma série, abra a temporada e dê play. Sem cadastro, sem enrolação.
+      <div className="mx-auto flex min-h-[32rem] max-w-screen-2xl flex-col justify-end gap-8 px-4 pb-8 pt-40 md:min-h-[36rem] md:justify-center md:px-8 md:pt-16">
+        <div key={slide.slug} className="hero-in flex max-w-lg flex-col gap-4">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">Em destaque hoje</p>
+          <h1 className="text-3xl font-black leading-tight text-balance md:text-5xl">{slide.title}</h1>
+          <p className="text-sm text-muted-foreground">
+            {`Legendado · ${slide.seasonCount} temporada${slide.seasonCount === 1 ? '' : 's'} · ${slide.totalEpisodes} episódios`}
           </p>
           <div className="flex flex-wrap gap-3">
-            {firstEpisode && (
+            {slide.firstEpisodeHref && (
               <Link
-                href={`/assistir/${featured.slug}/${firstSeason.number}/${firstEpisode.number}`}
-                className="flex h-11 items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+                href={slide.firstEpisodeHref}
+                className="flex h-11 items-center gap-2 bg-primary px-5 text-sm font-black uppercase text-primary-foreground transition hover:brightness-110"
               >
-                <Play className="size-4 fill-current" aria-hidden="true" />
-                {`Assistir ${featured.title.length > 28 ? 'destaque' : featured.title}`}
+                <Play className="size-5 fill-current" aria-hidden="true" />
+                Começar a assistir T1 E1
               </Link>
             )}
             <Link
-              href="/catalogo"
-              className="flex h-11 items-center gap-2 rounded-full border bg-card/60 px-6 text-sm font-semibold backdrop-blur transition hover:bg-card"
+              href={`/anime/${slide.slug}`}
+              className="flex h-11 items-center border-2 border-primary px-5 text-sm font-black uppercase text-primary transition hover:bg-primary/10"
             >
-              <LayoutGrid className="size-4" aria-hidden="true" />
-              Ver catálogo
+              Mais detalhes
             </Link>
           </div>
         </div>
 
-        <Link
-          href={`/anime/${featured.slug}`}
-          className="group relative hidden w-64 shrink-0 flex-col gap-3 md:flex"
-        >
-          <div className="relative aspect-[2/3] overflow-hidden rounded-xl ring-1 ring-border shadow-2xl transition group-hover:ring-primary">
-            <Image
-              src={featured.poster}
-              alt={`Pôster de ${featured.title}`}
-              fill
-              priority
-              sizes="256px"
-              className="object-cover"
-            />
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => go(index - 1)}
+            aria-label="Destaque anterior"
+            className="hidden size-9 items-center justify-center text-muted-foreground transition hover:text-foreground md:flex"
+          >
+            <ChevronLeft className="size-6" aria-hidden="true" />
+          </button>
+          <div className="flex gap-2">
+            {slides.map((s, i) => (
+              <button
+                key={s.slug}
+                type="button"
+                onClick={() => go(i)}
+                aria-label={`Ir para ${s.title}`}
+                aria-current={i === index}
+                className={`relative h-2 overflow-hidden rounded-full bg-foreground/30 transition-all ${i === index ? 'w-10' : 'w-2 hover:bg-foreground/60'}`}
+              >
+                {i === index && (
+                  <span
+                    key={`${s.slug}-${index}`}
+                    className="hero-progress absolute inset-0 rounded-full bg-primary"
+                    data-paused={paused}
+                    style={{ '--hero-duration': `${DURATION_MS}ms` } as React.CSSProperties}
+                    onAnimationEnd={() => go(index + 1)}
+                  />
+                )}
+              </button>
+            ))}
           </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs uppercase tracking-widest text-primary">Destaque do dia</span>
-            <span className="font-heading font-semibold text-pretty">{featured.title}</span>
-            <span className="text-sm text-muted-foreground">
-              {`${featured.seasons.length} temporada${featured.seasons.length > 1 ? 's' : ''} · ${featured.totalEpisodes} episódios`}
-            </span>
-          </div>
-        </Link>
+          <button
+            type="button"
+            onClick={() => go(index + 1)}
+            aria-label="Próximo destaque"
+            className="hidden size-9 items-center justify-center text-muted-foreground transition hover:text-foreground md:flex"
+          >
+            <ChevronRight className="size-6" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </section>
   )

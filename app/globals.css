@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-inter), 'Inter', system-ui, sans-serif;
-  --font-heading: var(--font-space), 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: var(--font-lato), 'Lato', system-ui, sans-serif;
+  --font-heading: var(--font-lato), 'Lato', system-ui, sans-serif;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -34,28 +34,28 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Palette: ink night #0f121a, panel #181d28, paper #eef0f5, fog #8b93a7, sakura coral #ff5470 */
+/* Crunchyroll-style palette: black, panel #141519, white, gray #a0a0a0, orange #ff640a */
 :root {
   color-scheme: dark;
-  --background: #0f121a;
-  --foreground: #eef0f5;
-  --card: #181d28;
-  --card-foreground: #eef0f5;
-  --popover: #181d28;
-  --popover-foreground: #eef0f5;
-  --primary: #ff5470;
-  --primary-foreground: #0f121a;
-  --secondary: #181d28;
-  --secondary-foreground: #eef0f5;
-  --muted: #181d28;
-  --muted-foreground: #8b93a7;
-  --accent: #181d28;
-  --accent-foreground: #eef0f5;
-  --destructive: #ff5470;
-  --border: rgb(238 240 245 / 0.09);
-  --input: rgb(238 240 245 / 0.14);
-  --ring: #ff5470;
-  --radius: 0.625rem;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #141519;
+  --card-foreground: #ffffff;
+  --popover: #141519;
+  --popover-foreground: #ffffff;
+  --primary: #ff640a;
+  --primary-foreground: #000000;
+  --secondary: #141519;
+  --secondary-foreground: #ffffff;
+  --muted: #141519;
+  --muted-foreground: #a0a0a0;
+  --accent: #141519;
+  --accent-foreground: #ffffff;
+  --destructive: #ff640a;
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.2);
+  --ring: #ff640a;
+  --radius: 0.25rem;
 }
 
 @layer base {
@@ -67,25 +67,51 @@
   }
 }
 
-@keyframes poster-drift {
+@keyframes hero-progress {
   from {
-    transform: translateY(0);
+    transform: scaleX(0);
   }
   to {
-    transform: translateY(-50%);
+    transform: scaleX(1);
   }
 }
 
-.poster-column {
-  animation: poster-drift var(--drift-duration, 60s) linear infinite;
+.hero-progress {
+  transform-origin: left;
+  animation: hero-progress var(--hero-duration, 8s) linear forwards;
 }
 
-.poster-column[data-reverse='true'] {
-  animation-direction: reverse;
+.hero-progress[data-paused='true'] {
+  animation-play-state: paused;
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-in > * {
+  animation: hero-in 0.6s ease-out both;
+}
+.hero-in > *:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.hero-in > *:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.hero-in > *:nth-child(4) {
+  animation-delay: 0.24s;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .poster-column {
+  .hero-progress,
+  .hero-in > * {
     animation: none;
   }
 }
