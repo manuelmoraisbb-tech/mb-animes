@@ -10,6 +10,20 @@ const FORWARDED_HEADERS = [
   'etag',
 ]
 
+// IPTV panels often gate streams by client type, so try several player identities.
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+  'VLC/3.0.20 LibVLC/3.0.20',
+  'IPTVSmartersPlayer',
+  'okhttp/4.12.0',
+]
+
+function candidateUrls(target: URL) {
+  const urls = [target.toString()]
+  if (target.protocol === 'http:') urls.push(target.toString().replace(/^http:/, 'https:'))
+  return urls
+}
+
 export async function GET(request: NextRequest) {
   const raw = request.nextUrl.searchParams.get('url')
   if (!raw) return new Response('Missing url', { status: 400 })
@@ -26,12 +40,25 @@ export async function GET(request: NextRequest) {
   }
 
   const range = request.headers.get('range')
-  const upstream = await fetch(target, {
-    headers: range ? { range } : {},
-    signal: request.signal,
-  }).catch(() => null)
+  let upstream: Response | null = null
 
-  if (!upstream || !upstream.body || upstream.status >= 400) {
+  outer: for (const url of candidateUrls(target)) {
+    for (const userAgent of USER_AGENTS) {
+      if (request.signal.aborted) break outer
+      const response = await fetch(url, {
+        headers: { 'user-agent': userAgent, accept: '*/*', ...(range ? { range } : {}) },
+        redirect: 'follow',
+        signal: AbortSignal.any([request.signal, AbortSignal.timeout(12_000)]),
+      }).catch(() => null)
+      if (response?.body && response.status < 400) {
+        upstream = response
+        break outer
+      }
+      await response?.body?.cancel().catch(() => {})
+    }
+  }
+
+  if (!upstream) {
     return new Response('Upstream unavailable', { status: 502 })
   }
 
