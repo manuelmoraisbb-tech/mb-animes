@@ -1,43 +1,39 @@
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 import { Logo } from '@/components/logo'
+import { UserMenu } from '@/components/user-menu'
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 md:gap-8 md:px-6">
-        <Link href="/" aria-label="MB Animes — início" className="shrink-0">
-          <Logo />
-        </Link>
-
-        <nav aria-label="Principal" className="hidden items-center gap-6 text-sm md:flex">
-          <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground">
-            Início
-          </Link>
-          <Link href="/catalogo" className="text-muted-foreground transition-colors hover:text-foreground">
-            Catálogo
-          </Link>
+    <header className="sticky top-0 z-50 bg-card">
+      <div className="mx-auto flex h-15 max-w-screen-2xl items-center gap-2 px-4 md:px-8">
+        <Logo />
+        <nav aria-label="Principal" className="ml-4 hidden items-stretch self-stretch md:flex">
+          <HeaderLink href="/">Novidades</HeaderLink>
+          <HeaderLink href="/catalogo">Navegar</HeaderLink>
         </nav>
-
-        <form action="/catalogo" role="search" className="ml-auto w-full max-w-xs">
-          <label htmlFor="header-search" className="sr-only">
-            Buscar anime
-          </label>
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <input
-              id="header-search"
-              name="q"
-              type="search"
-              placeholder="Buscar anime..."
-              className="h-10 w-full rounded-full border bg-card pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            />
-          </div>
-        </form>
+        <div className="ml-auto flex items-center gap-1">
+          <Link
+            href="/catalogo"
+            aria-label="Buscar animes"
+            className="flex size-11 items-center justify-center text-muted-foreground transition hover:bg-background hover:text-foreground"
+          >
+            <Search className="size-5" aria-hidden="true" />
+          </Link>
+          <UserMenu />
+        </div>
       </div>
     </header>
+  )
+}
+
+function HeaderLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center px-4 text-sm font-bold text-muted-foreground transition hover:bg-background hover:text-foreground"
+    >
+      {children}
+    </Link>
   )
 }

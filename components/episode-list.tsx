@@ -1,26 +1,28 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { Play } from 'lucide-react'
 import type { Season } from '@/lib/catalog'
-import { cn } from '@/lib/utils'
 
 export function EpisodeList({
   slug,
   season,
+  poster,
   currentEpisode,
   compact = false,
 }: {
   slug: string
   season: Season
-  poster?: string
+  poster: string
   currentEpisode?: number
   compact?: boolean
 }) {
   return (
-    <ol
-      className={cn(
-        'grid gap-2',
-        compact ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-      )}
+    <ul
+      className={
+        compact
+          ? 'flex flex-col gap-3'
+          : 'grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+      }
     >
       {season.episodes.map((ep) => {
         const active = ep.number === currentEpisode
@@ -29,30 +31,40 @@ export function EpisodeList({
             <Link
               href={`/assistir/${slug}/${season.number}/${ep.number}`}
               aria-current={active ? 'page' : undefined}
-              className={cn(
-                'group flex items-center gap-4 rounded-lg border p-3 transition',
-                active ? 'border-primary bg-primary/10' : 'bg-card hover:border-primary/60',
-              )}
+              className={`group flex gap-3 ${compact ? 'flex-row items-start p-1' : 'flex-col'} ${active ? 'bg-card' : ''}`}
             >
-              <span
-                className={cn(
-                  'flex size-10 shrink-0 items-center justify-center rounded-md font-heading text-sm font-bold tabular-nums',
-                  active
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-background text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground',
-                )}
+              <div
+                className={`relative aspect-video shrink-0 overflow-hidden bg-card ${compact ? 'w-36' : 'w-full'}`}
               >
-                <span className="group-hover:hidden">{String(ep.number).padStart(2, '0')}</span>
-                <Play className="hidden size-4 fill-current group-hover:block" aria-hidden="true" />
-              </span>
-              <span className="flex min-w-0 flex-col">
-                <span className="text-sm font-medium">{`Episódio ${ep.number}`}</span>
-                <span className="truncate text-xs text-muted-foreground">{ep.name}</span>
-              </span>
+                <Image
+                  src={poster}
+                  alt=""
+                  fill
+                  sizes={compact ? '144px' : '(min-width: 1024px) 25vw, 100vw'}
+                  className="object-cover object-top transition duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-background/40 opacity-0 transition group-hover:opacity-100">
+                  <Play className="size-8 fill-foreground text-foreground" aria-hidden="true" />
+                </div>
+                {active && (
+                  <span className="absolute bottom-1 left-1 bg-primary px-1.5 py-0.5 text-[11px] font-black uppercase text-primary-foreground">
+                    Assistindo
+                  </span>
+                )}
+              </div>
+              <div className="flex min-w-0 flex-col gap-1">
+                <p className="text-xs font-bold text-muted-foreground">{`T${season.number} E${ep.number}`}</p>
+                <h3
+                  className={`line-clamp-2 text-sm font-bold leading-snug transition group-hover:text-primary ${active ? 'text-primary' : ''}`}
+                >
+                  {ep.name}
+                </h3>
+                {!compact && <p className="text-xs text-muted-foreground">Legendado</p>}
+              </div>
             </Link>
           </li>
         )
       })}
-    </ol>
+    </ul>
   )
 }

@@ -49,6 +49,23 @@ export function slugify(value: string) {
     .replace(/^-|-$/g, '')
 }
 
+const MIRROR_BASE = 'http://89.222.120.130:34871/s3v3/0-uncategorized'
+
+/**
+ * auth.urlsync.gy only redirects to the real file server, keeping the file name
+ * (e.g. .../abc123abc/144277.mp4 -> MIRROR_BASE/144277.mp4), so we skip the redirect.
+ */
+export function toMirrorUrl(url: string) {
+  try {
+    const parsed = new URL(url)
+    if (parsed.host !== 'auth.urlsync.gy') return url
+    const file = parsed.pathname.split('/').pop()
+    return file ? `${MIRROR_BASE}/${file}` : url
+  } catch {
+    return url
+  }
+}
+
 function buildCatalog() {
   const entries = Object.entries(rawLinks as Record<string, RawAnime>)
   const list: Anime[] = []
@@ -64,7 +81,7 @@ function buildCatalog() {
         number: Number(seasonKey) || 1,
         episodes: [...eps]
           .sort((a, b) => a.episodio - b.episodio)
-          .map((ep) => ({ number: ep.episodio, name: ep.nome, url: ep.url })),
+          .map((ep) => ({ number: ep.episodio, name: ep.nome, url: toMirrorUrl(ep.url) })),
       }))
       .filter((s) => s.episodes.length > 0)
       .sort((a, b) => a.number - b.number)

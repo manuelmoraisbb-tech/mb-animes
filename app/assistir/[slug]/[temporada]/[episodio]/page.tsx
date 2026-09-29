@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { VideoPlayer } from '@/components/video-player'
 import { EpisodeList } from '@/components/episode-list'
+import { Comments } from '@/components/comments'
 import { getAnimeBySlug, getPlayableUrl, type Anime } from '@/lib/catalog'
 
 type Params = Promise<{ slug: string; temporada: string; episodio: string }>
@@ -56,69 +57,89 @@ export default async function WatchPage({ params }: { params: Params }) {
   const prevHref = prev ? `/assistir/${slug}/${prev.season}/${prev.episode}` : null
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-8 px-4 py-6 md:px-6 lg:grid-cols-[1fr_22rem]">
-      <div className="flex min-w-0 flex-col gap-5">
-        <VideoPlayer
-          key={episode.url}
-          src={getPlayableUrl(episode.url)}
-          directUrl={episode.url}
-          poster={anime.poster}
-          title={episode.name}
-          nextHref={nextHref}
-        />
-
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="flex flex-col gap-1">
-            <Link href={`/anime/${slug}`} className="text-sm text-primary hover:underline">
-              {anime.title}
-            </Link>
-            <h1 className="font-heading text-2xl font-bold text-balance">
-              {`Temporada ${season.number} · Episódio ${episode.number}`}
-            </h1>
-          </div>
-          <div className="flex gap-2">
-            <NavButton href={prevHref} direction="prev" />
-            <NavButton href={nextHref} direction="next" />
-          </div>
+    <div className="flex flex-col">
+      <div className="bg-background">
+        <div className="mx-auto max-w-6xl">
+          <VideoPlayer
+            key={episode.url}
+            src={getPlayableUrl(episode.url)}
+            poster={anime.poster}
+            title={episode.name}
+            nextHref={nextHref}
+          />
         </div>
       </div>
 
-      <aside aria-label={`Episódios da temporada ${season.number}`} className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-heading text-lg font-semibold">{`Temporada ${season.number}`}</h2>
-          {anime.seasons.length > 1 && (
-            <Link href={`/anime/${slug}?t=${season.number}`} className="text-sm text-muted-foreground hover:text-foreground">
-              Outras temporadas
+      <div className="mx-auto grid w-full max-w-screen-2xl gap-10 px-4 py-8 md:px-8 lg:grid-cols-[1fr_24rem]">
+        <div className="flex min-w-0 flex-col gap-10">
+          <div className="flex flex-col gap-4 border-b pb-6">
+            <Link
+              href={`/anime/${slug}`}
+              className="w-fit text-sm font-bold text-primary hover:underline"
+            >
+              {anime.title}
             </Link>
-          )}
+            <h1 className="text-2xl font-black leading-tight text-balance">
+              {`T${season.number} E${episode.number} — ${episode.name}`}
+            </h1>
+            <p className="text-sm text-muted-foreground">Legendado</p>
+            <div className="flex gap-2">
+              <NavButton href={prevHref} direction="prev" />
+              <NavButton href={nextHref} direction="next" />
+            </div>
+          </div>
+          <Comments animeSlug={slug} episodeKey={`${season.number}-${episode.number}`} />
         </div>
-        <div className="max-h-[70vh] overflow-y-auto pr-1">
-          <EpisodeList slug={slug} season={season} currentEpisode={episode.number} compact />
-        </div>
-      </aside>
+
+        <aside aria-label={`Episódios da temporada ${season.number}`} className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-black">{`Temporada ${season.number}`}</h2>
+            {anime.seasons.length > 1 && (
+              <Link
+                href={`/anime/${slug}?t=${season.number}`}
+                className="text-sm font-bold text-muted-foreground hover:text-foreground"
+              >
+                Outras temporadas
+              </Link>
+            )}
+          </div>
+          <div className="max-h-[70vh] overflow-y-auto pr-1">
+            <EpisodeList
+              slug={slug}
+              season={season}
+              poster={anime.poster}
+              currentEpisode={episode.number}
+              compact
+            />
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }
 
 function NavButton({ href, direction }: { href: string | null; direction: 'prev' | 'next' }) {
-  const label = direction === 'prev' ? 'Anterior' : 'Próximo'
+  const label = direction === 'prev' ? 'Anterior' : 'Próximo episódio'
   const Icon = direction === 'prev' ? ChevronLeft : ChevronRight
   const className =
-    'flex h-10 items-center gap-1 rounded-full border bg-card px-4 text-sm font-medium transition'
+    'flex h-10 items-center gap-1 border-2 px-4 text-xs font-black uppercase transition'
+  const content = (
+    <>
+      {direction === 'prev' && <Icon className="size-4" aria-hidden="true" />}
+      {label}
+      {direction === 'next' && <Icon className="size-4" aria-hidden="true" />}
+    </>
+  )
   if (!href) {
     return (
-      <span aria-disabled="true" className={`${className} cursor-not-allowed opacity-40`}>
-        {direction === 'prev' && <Icon className="size-4" aria-hidden="true" />}
-        {label}
-        {direction === 'next' && <Icon className="size-4" aria-hidden="true" />}
+      <span aria-disabled="true" className={`${className} cursor-not-allowed border-border text-muted-foreground opacity-50`}>
+        {content}
       </span>
     )
   }
   return (
-    <Link href={href} className={`${className} hover:border-primary hover:text-primary`}>
-      {direction === 'prev' && <Icon className="size-4" aria-hidden="true" />}
-      {label}
-      {direction === 'next' && <Icon className="size-4" aria-hidden="true" />}
+    <Link href={href} className={`${className} border-primary text-primary hover:bg-primary/10`}>
+      {content}
     </Link>
   )
 }

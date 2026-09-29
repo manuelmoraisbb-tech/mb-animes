@@ -1,12 +1,14 @@
+import Link from 'next/link'
+
 export function Logo() {
   return (
-    <span className="flex items-center gap-2 font-heading text-lg font-bold tracking-tight">
-      <span className="flex size-8 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">
+    <Link href="/" aria-label="MB Animes — início" className="flex items-center gap-2 text-primary">
+      <span className="flex size-8 items-center justify-center rounded-full bg-primary text-xs font-black text-primary-foreground">
         MB
       </span>
-      <span>
-        animes<span className="text-primary">.</span>
+      <span className="text-lg font-black uppercase tracking-tight">
+        MB Animes
       </span>
-    </span>
+    </Link>
   )
 }
