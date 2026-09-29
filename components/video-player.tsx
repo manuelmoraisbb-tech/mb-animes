@@ -2,18 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  AlertTriangle,
-  Check,
-  Copy,
-  Download,
-  ExternalLink,
-  ListVideo,
-  Loader2,
-  MonitorPlay,
-  RotateCcw,
-  Smartphone,
-} from 'lucide-react'
+import { AlertTriangle, Loader2, RotateCcw } from 'lucide-react'
+import { ExternalPlayers } from '@/components/external-players'
 
 const STALL_TIMEOUT_MS = 20_000
 
@@ -29,6 +19,27 @@ function buildSources(proxyUrl: string, directUrl: string): Source[] {
 }
 
 export function VideoPlayer({
+  src,
+  directUrl,
+  poster,
+  title,
+  nextHref,
+}: {
+  src: string
+  directUrl: string
+  poster: string
+  title: string
+  nextHref: string | null
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      <InlinePlayer src={src} directUrl={directUrl} poster={poster} title={title} nextHref={nextHref} />
+      <ExternalPlayers url={directUrl} title={title} />
+    </div>
+  )
+}
+
+function InlinePlayer({
   src,
   directUrl,
   poster,
@@ -62,15 +73,27 @@ export function VideoPlayer({
 
   if (exhausted) {
     return (
-      <PlaybackFallback
-        directUrl={directUrl}
-        title={title}
-        onRetry={() => {
-          setIndex(0)
-          setReady(false)
-          setRound((r) => r + 1)
-        }}
-      />
+      <div className="flex aspect-video w-full flex-col items-center justify-center gap-4 rounded-xl bg-card p-6 text-center ring-1 ring-border">
+        <AlertTriangle className="size-8 shrink-0 text-primary" aria-hidden="true" />
+        <div className="flex flex-col gap-1">
+          <p className="font-heading text-lg font-semibold">O vídeo não abriu aqui dentro</p>
+          <p className="max-w-md text-sm leading-relaxed text-muted-foreground text-pretty">
+            O servidor do vídeo bloqueia reprodução embutida. Use um player externo logo abaixo.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setIndex(0)
+            setReady(false)
+            setRound((r) => r + 1)
+          }}
+          className="flex h-10 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
+        >
+          <RotateCcw className="size-4" aria-hidden="true" />
+          Tentar de novo
+        </button>
+      </div>
     )
   }
 
@@ -101,91 +124,6 @@ export function VideoPlayer({
           </span>
         </div>
       )}
-    </div>
-  )
-}
-
-function PlaybackFallback({
-  directUrl,
-  title,
-  onRetry,
-}: {
-  directUrl: string
-  title: string
-  onRetry: () => void
-}) {
-  const [copied, setCopied] = useState(false)
-  const withoutScheme = directUrl.replace(/^https?:\/\//, '')
-  const scheme = directUrl.startsWith('https') ? 'https' : 'http'
-  const playlistHref = `data:audio/x-mpegurl;charset=utf-8,${encodeURIComponent(
-    `#EXTM3U\n#EXTINF:-1,${title}\n${directUrl}\n`,
-  )}`
-
-  const options = [
-    { href: directUrl, label: 'Abrir no navegador', icon: ExternalLink, newTab: true },
-    { href: `vlc://${directUrl}`, label: 'Abrir no VLC', icon: MonitorPlay },
-    {
-      href: `intent://${withoutScheme}#Intent;scheme=${scheme};type=video/*;end`,
-      label: 'Player do Android',
-      icon: Smartphone,
-    },
-    {
-      href: `vlc-x-callback://x-callback-url/stream?url=${encodeURIComponent(directUrl)}`,
-      label: 'VLC no iPhone',
-      icon: Smartphone,
-    },
-    { href: playlistHref, label: 'Baixar playlist .m3u', icon: ListVideo, download: 'episodio.m3u' },
-    { href: directUrl, label: 'Baixar episódio', icon: Download, download: '' },
-  ]
-
-  return (
-    <div className="flex aspect-video w-full flex-col items-center justify-center gap-5 overflow-y-auto rounded-xl bg-card p-6 text-center ring-1 ring-border">
-      <AlertTriangle className="size-8 shrink-0 text-primary" aria-hidden="true" />
-      <div className="flex flex-col gap-1">
-        <p className="font-heading text-lg font-semibold">O vídeo não abriu aqui dentro</p>
-        <p className="max-w-lg text-sm leading-relaxed text-muted-foreground text-pretty">
-          O servidor do vídeo bloqueia reprodução embutida. Escolha uma das opções abaixo: elas
-          abrem o episódio direto da sua conexão.
-        </p>
-      </div>
-      <ul className="grid w-full max-w-xl grid-cols-2 gap-2 sm:grid-cols-3">
-        {options.map(({ href, label, icon: Icon, newTab, download }) => (
-          <li key={label}>
-            <a
-              href={href}
-              target={newTab ? '_blank' : undefined}
-              rel={newTab ? 'noopener noreferrer' : undefined}
-              download={download}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border bg-background px-3 text-sm font-medium transition hover:border-primary hover:text-primary"
-            >
-              <Icon className="size-4 shrink-0" aria-hidden="true" />
-              <span className="truncate">{label}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
-      <div className="flex flex-wrap justify-center gap-2">
-        <button
-          type="button"
-          onClick={async () => {
-            await navigator.clipboard.writeText(directUrl).catch(() => {})
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
-          }}
-          className="flex h-10 items-center gap-2 rounded-full border px-5 text-sm font-semibold hover:bg-background"
-        >
-          {copied ? <Check className="size-4" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
-          {copied ? 'Link copiado' : 'Copiar link'}
-        </button>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="flex h-10 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
-        >
-          <RotateCcw className="size-4" aria-hidden="true" />
-          Tentar de novo
-        </button>
-      </div>
     </div>
   )
 }
