@@ -59,7 +59,7 @@ export function EpisodeList({
                 >
                   {ep.name}
                 </h3>
-                {!compact && <p className="text-xs text-muted-foreground">Legendado</p>}
+                {!compact && <p className="text-xs text-muted-foreground">Dublado/Legendado</p>}
               </div>
             </Link>
           </li>

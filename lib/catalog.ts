@@ -152,6 +152,12 @@ export function getPlayableUrl(url: string) {
   return url.startsWith('http://') ? `/api/stream?url=${encodeURIComponent(url)}` : url
 }
 
+/** Always proxied so the browser gets a same-origin file with a proper download filename. */
+export function getDownloadUrl(url: string, fileName: string) {
+  const ext = url.split('?')[0].match(/\.(mp4|mkv|avi|m4v|webm|ts)$/i)?.[0] ?? '.mp4'
+  return `/api/stream?url=${encodeURIComponent(url)}&download=${encodeURIComponent(fileName + ext)}`
+}
+
 export function getPosterWall() {
   const images = (rawImages as { imagens: string[] }).imagens ?? []
   return images.length > 0 ? images : catalog.list.map((a) => a.poster)

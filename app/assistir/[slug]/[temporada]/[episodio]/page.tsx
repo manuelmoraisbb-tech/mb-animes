@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { VideoPlayer } from '@/components/video-player'
 import { EpisodeList } from '@/components/episode-list'
 import { Comments } from '@/components/comments'
-import { getAnimeBySlug, getPlayableUrl, type Anime } from '@/lib/catalog'
+import { getAnimeBySlug, getDownloadUrl, getPlayableUrl, type Anime } from '@/lib/catalog'
 
 type Params = Promise<{ slug: string; temporada: string; episodio: string }>
 
@@ -65,7 +65,12 @@ export default async function WatchPage({ params }: { params: Params }) {
             src={getPlayableUrl(episode.url)}
             poster={anime.poster}
             title={episode.name}
+            subtitle={`${anime.title} · T${season.number} E${episode.number}`}
             nextHref={nextHref}
+            downloadHref={getDownloadUrl(
+              episode.url,
+              `${anime.title} T${season.number}E${String(episode.number).padStart(2, '0')}`,
+            )}
           />
         </div>
       </div>
@@ -82,7 +87,7 @@ export default async function WatchPage({ params }: { params: Params }) {
             <h1 className="text-2xl font-black leading-tight text-balance">
               {`T${season.number} E${episode.number} — ${episode.name}`}
             </h1>
-            <p className="text-sm text-muted-foreground">Legendado</p>
+            <p className="text-sm text-muted-foreground">Dublado/Legendado</p>
             <div className="flex gap-2">
               <NavButton href={prevHref} direction="prev" />
               <NavButton href={nextHref} direction="next" />
