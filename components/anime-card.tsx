@@ -25,7 +25,7 @@ export function AnimeCard({ anime, priority = false }: { anime: AnimeSummary; pr
       </div>
       <div className="flex flex-col gap-0.5">
         <h3 className="line-clamp-2 text-sm font-bold leading-snug">{anime.title}</h3>
-        <p className="text-xs text-muted-foreground">Legendado</p>
+        <p className="text-xs text-muted-foreground">Dublado/Legendado</p>
       </div>
 
       {/* Crunchyroll-style hover panel that covers poster and text */}
@@ -41,7 +41,7 @@ export function AnimeCard({ anime, priority = false }: { anime: AnimeSummary; pr
           {plural(anime.totalEpisodes, 'episódio', 'episódios')}
         </p>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Assista agora no MB Animes, legendado, do primeiro ao último episódio.
+          Assista agora no MB Animes, do primeiro ao último episódio.
         </p>
         <span className="mt-auto flex size-9 items-center justify-center text-primary">
           <Play className="size-6 fill-current" />

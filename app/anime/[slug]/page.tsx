@@ -62,7 +62,7 @@ export default async function AnimePage({
           <div className="hero-in flex max-w-2xl flex-col gap-4">
             <h1 className="text-3xl font-black leading-tight text-balance md:text-5xl">{anime.title}</h1>
             <p className="text-sm text-muted-foreground">
-              {`Legendado · ${anime.seasons.length} temporada${anime.seasons.length > 1 ? 's' : ''} · ${anime.totalEpisodes} episódios`}
+              {`Dublado/Legendado · ${anime.seasons.length} temporada${anime.seasons.length > 1 ? 's' : ''} · ${anime.totalEpisodes} episódios`}
             </p>
             {first && (
               <Link

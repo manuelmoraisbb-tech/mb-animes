@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { AuthField, AuthShell, authButtonClass } from '@/components/auth-shell'
+import { AuthDivider, GoogleButton } from '@/components/google-button'
 
 function signUpErrorMessage(error: unknown) {
   const { code, status } = (error ?? {}) as { code?: string; status?: number }
@@ -51,6 +52,8 @@ export default function SignUpPage() {
 
   return (
     <AuthShell title="Criar conta" description="Crie sua conta MB Animes e comente nos episódios.">
+      <GoogleButton label="Criar conta com Google" />
+      <AuthDivider />
       <form onSubmit={handleSignUp} className="flex flex-col gap-5">
         <AuthField id="username" label="Nome de usuário" autoComplete="nickname" required maxLength={30} value={username} onChange={(e) => setUsername(e.target.value)} />
         <AuthField id="email" label="E-mail" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -59,6 +62,9 @@ export default function SignUpPage() {
         <button type="submit" disabled={loading} className={authButtonClass}>
           {loading ? 'Criando...' : 'Criar conta'}
         </button>
+        <p className="text-center text-xs leading-relaxed text-muted-foreground">
+          O e-mail de confirmação pode levar até 2 minutos para chegar. Confira também a pasta de spam.
+        </p>
       </form>
       <p className="text-center text-sm text-muted-foreground">
         {'Já tem conta? '}

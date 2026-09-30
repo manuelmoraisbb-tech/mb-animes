@@ -73,7 +73,7 @@ export function HomeHero({ slides }: { slides: HeroSlide[] }) {
           <p className="text-xs font-bold uppercase tracking-widest text-primary">Em destaque hoje</p>
           <h1 className="text-3xl font-black leading-tight text-balance md:text-5xl">{slide.title}</h1>
           <p className="text-sm text-muted-foreground">
-            {`Legendado · ${slide.seasonCount} temporada${slide.seasonCount === 1 ? '' : 's'} · ${slide.totalEpisodes} episódios`}
+            {`Dublado/Legendado · ${slide.seasonCount} temporada${slide.seasonCount === 1 ? '' : 's'} · ${slide.totalEpisodes} episódios`}
           </p>
           <div className="flex flex-wrap gap-3">
             {slide.firstEpisodeHref && (

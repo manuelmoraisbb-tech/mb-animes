@@ -69,5 +69,15 @@ export async function GET(request: NextRequest) {
   }
   if (!headers.has('accept-ranges')) headers.set('accept-ranges', 'bytes')
 
+  const downloadName = request.nextUrl.searchParams.get('download')
+  if (downloadName) {
+    const safe = downloadName.replace(/[\\/:*?"<>|\r\n]+/g, ' ').trim().slice(0, 150) || 'episodio.mp4'
+    const ascii = safe.normalize('NFD').replace(/[^\x20-\x7e]/g, '')
+    headers.set(
+      'content-disposition',
+      `attachment; filename="${ascii.replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(safe)}`,
+    )
+  }
+
   return new Response(upstream.body, { status: upstream.status, headers })
 }

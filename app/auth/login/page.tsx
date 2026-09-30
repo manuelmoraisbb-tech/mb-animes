@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { mutate } from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import { AuthField, AuthShell, authButtonClass } from '@/components/auth-shell'
+import { AuthDivider, GoogleButton } from '@/components/google-button'
 
 function loginErrorMessage(error: unknown) {
   const { code, status } = (error ?? {}) as { code?: string; status?: number }
@@ -39,6 +40,8 @@ export default function LoginPage() {
 
   return (
     <AuthShell title="Entrar" description="Entre para comentar nos seus animes favoritos.">
+      <GoogleButton />
+      <AuthDivider />
       <form onSubmit={handleLogin} className="flex flex-col gap-5">
         <AuthField id="email" label="E-mail" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <AuthField id="password" label="Senha" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
