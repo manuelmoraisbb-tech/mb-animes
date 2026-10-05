@@ -1,15 +1,16 @@
 import { HomeHero, type HeroSlide } from '@/components/home-hero'
 import { AnimeRow } from '@/components/anime-row'
 import {
-  getDailyPicks,
-  getLongestSeries,
-  getMultiSeason,
-  getShortSeries,
+  getLiveCatalog,
   toSummary,
 } from '@/lib/catalog'
 
-export default function HomePage() {
-  const picks = getDailyPicks(20)
+export default async function HomePage() {
+  const liveCatalog = await getLiveCatalog()
+  const picks = [...liveCatalog].sort((a, b) => a.title.localeCompare(b.title, 'pt-BR')).slice(0, 20)
+  const longest = [...liveCatalog].sort((a, b) => b.totalEpisodes - a.totalEpisodes).slice(0, 20)
+  const multiSeason = liveCatalog.filter((anime) => anime.seasons.length > 1).slice(0, 20)
+  const short = liveCatalog.filter((anime) => anime.totalEpisodes > 0 && anime.totalEpisodes <= 13).slice(0, 20)
   const slides: HeroSlide[] = picks.slice(0, 5).map((anime) => {
     const first = anime.seasons[0]
     return {
@@ -29,16 +30,16 @@ export default function HomePage() {
       <AnimeRow
         title="Para maratonar"
         subtitle="As séries com mais episódios do catálogo."
-        animes={getLongestSeries(20).map(toSummary)}
+        animes={longest.map(toSummary)}
       />
       <AnimeRow
         title="Várias temporadas"
-        animes={getMultiSeason(20).map(toSummary)}
+        animes={multiSeason.map(toSummary)}
       />
       <AnimeRow
         title="Curtinhos"
         subtitle="Até 13 episódios, dá pra ver em um fim de semana."
-        animes={getShortSeries(20).map(toSummary)}
+        animes={short.map(toSummary)}
       />
     </div>
   )

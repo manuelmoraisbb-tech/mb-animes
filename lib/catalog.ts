@@ -213,3 +213,33 @@ export function getRelated(anime: Anime, count: number) {
   )
   return [...related, ...fillers].slice(0, count)
 }
+
+/** Reads the live Supabase catalog and falls back to the bundled JSON during setup. */
+export async function getLiveCatalog() {
+  try {
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+    const [{ data: rows, error: animeError }, { data: episodes, error: episodeError }] = await Promise.all([
+      supabase.from('catalog_animes').select('slug,title,poster,hidden,featured').eq('hidden', false).order('title'),
+      supabase.from('catalog_episodes').select('anime_slug,season,episode,name,url').eq('removed', false).order('season').order('episode'),
+    ])
+    if (animeError || episodeError || !rows?.length) return catalog.list
+    const episodeMap = new Map<string, Season[]>()
+    for (const ep of episodes ?? []) {
+      const seasons = episodeMap.get(ep.anime_slug) ?? []
+      let season = seasons.find((item) => item.number === ep.season)
+      if (!season) { season = { number: ep.season, episodes: [] }; seasons.push(season); episodeMap.set(ep.anime_slug, seasons) }
+      season.episodes.push({ number: ep.episode, name: ep.name, url: toMirrorUrl(ep.url) })
+    }
+    return rows.map((row) => {
+      const seasons = (episodeMap.get(row.slug) ?? []).sort((a, b) => a.number - b.number)
+      return { slug: row.slug, title: row.title, poster: row.poster ?? '', seasons, totalEpisodes: seasons.reduce((total, season) => total + season.episodes.length, 0) }
+    }).filter((anime) => anime.seasons.length > 0)
+  } catch {
+    return catalog.list
+  }
+}
+
+export async function getLiveAnimeBySlug(slug: string) {
+  return (await getLiveCatalog()).find((anime) => anime.slug === slug)
+}
