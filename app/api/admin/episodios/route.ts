@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs/promises'
-import path from 'path'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { slugify } from '@/lib/catalog'
 
 export async function POST(request: NextRequest) {
@@ -9,38 +9,23 @@ export async function POST(request: NextRequest) {
     const { animeSlug, season, episodeNumber, episodeName, episodeUrl } = body
 
     if (!animeSlug || !season || !episodeNumber || !episodeName || !episodeUrl) {
-      return NextResponse.json(
-        { error: 'Todos os campos são obrigatórios' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Todos os campos são obrigatórios' }, { status: 400 })
     }
 
-    // Read current links.json
-    const linksPath = path.join(process.cwd(), 'data', 'links.json')
-    const content = await fs.readFile(linksPath, 'utf-8')
-    const links = JSON.parse(content)
+    const filePath = path.join(process.cwd(), 'data', 'links.json')
+    const file = await fs.readFile(filePath, 'utf-8')
+    const data = JSON.parse(file)
 
-    // Find anime by title (we need to reverse slugify)
-    // This is a limitation - ideally we'd store the title with the data
-    let animeTitle = Object.keys(links).find((title) => slugify(title) === animeSlug)
+    const animeTitle = Object.keys(data).find((title) => slugify(title) === animeSlug)
 
     if (!animeTitle) {
-      return NextResponse.json(
-        { error: 'Anime não encontrado' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Anime não encontrado' }, { status: 404 })
     }
 
-    const anime = links[animeTitle]
-    if (!anime.temporadas) {
-      anime.temporadas = {}
-    }
+    const anime = data[animeTitle]
+    anime.temporadas ??= {}
+    anime.temporadas[season] ??= []
 
-    if (!anime.temporadas[season]) {
-      anime.temporadas[season] = []
-    }
-
-    // Add episode
     anime.temporadas[season].push({
       episodio: Number(episodeNumber),
       nome: episodeName,
@@ -50,21 +35,13 @@ export async function POST(request: NextRequest) {
       logo: anime.poster,
     })
 
-    // Sort episodes by number
     anime.temporadas[season].sort((a: any, b: any) => a.episodio - b.episodio)
 
-    // Write back
-    await fs.writeFile(linksPath, JSON.stringify(links, null, 2))
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2))
 
-    return NextResponse.json({
-      success: true,
-      message: 'Episódio adicionado com sucesso',
-    })
+    return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error('Error:', error)
-    return NextResponse.json(
-      { error: 'Erro ao processar requisição' },
-      { status: 500 }
-    )
+    console.error(error)
+    return NextResponse.json({ error: 'Erro ao salvar episódio' }, { status: 500 })
   }
 }
