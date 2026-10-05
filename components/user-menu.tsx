@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { LogOut, User } from 'lucide-react'
+import { LayoutDashboard, LogOut, User } from 'lucide-react'
 import { useUser } from '@/hooks/use-user'
 import { createClient } from '@/lib/supabase/client'
 
@@ -31,6 +31,11 @@ export function UserMenu() {
 
   return (
     <div className="flex items-center gap-1">
+      {user.isAdmin && (
+        <Link href="/admin" aria-label="Painel de administração" className="flex size-11 items-center justify-center text-muted-foreground transition hover:bg-background hover:text-foreground">
+          <LayoutDashboard className="size-5" aria-hidden="true" />
+        </Link>
+      )}
       <span className="flex items-center gap-2 px-2 text-sm font-bold">
         <span className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-black uppercase text-primary-foreground">
           {user.username.charAt(0)}
