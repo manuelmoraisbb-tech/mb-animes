@@ -23,17 +23,21 @@ function detectItems(input: unknown): ImportItem[] {
     if (Array.isArray(value)) { value.forEach((child) => visit(child, context)); return }
     if (!value || typeof value !== 'object') return
     const object = value as Record<string, unknown>
-    const title = String(object.title ?? object.nome ?? object.name ?? context.title ?? '')
+    const ownTitle = String(object.title ?? object.nome ?? object.name ?? '')
+    const title = ownTitle || context.title || ''
     const slug = normalizeSlug(String(object.slug ?? object.anime_slug ?? context.slug ?? title))
     const poster = String(object.poster ?? object.image ?? object.cover ?? object.logo ?? context.poster ?? '')
     const url = String(object.url ?? object.video_url ?? object.video ?? '')
     const season = Number(object.season ?? object.temporada ?? 1) || 1
     const episode = Number(object.episode ?? object.episodio ?? object.ep ?? 0) || 0
-    if (url && episode > 0 && slug) add({ kind: 'episode', title, slug, poster, anime_slug: slug, season, episode, name: String(object.nome ?? object.name ?? (title || `Episódio ${episode}`)), url })
+    const isEpisode = Boolean(url && episode > 0 && slug)
+    if (isEpisode) add({ kind: 'episode', title: context.title || title, slug, poster, anime_slug: context.slug || slug, season, episode, name: String(object.nome ?? object.name ?? (title || `Episódio ${episode}`)), url })
     else if (title && (object.poster || object.image || object.cover || object.slug || object.temporadas || object.seasons)) add({ kind: 'anime', title, slug, poster, anime_slug: '', season: 1, episode: 0, name: '', url: '' })
     for (const [key, child] of Object.entries(object)) {
       if (['url', 'video_url', 'video', 'poster', 'image', 'cover', 'logo'].includes(key)) continue
-      const childContext = !object.title && !object.nome && !object.name && !object.slug && !object.anime_slug ? { ...context, title: key, slug: normalizeSlug(key) } : { title, slug, poster }
+      const childContext = Array.isArray(child) || typeof child === 'object'
+        ? { title: title || key, slug: slug || normalizeSlug(key), poster }
+        : context
       visit(child, childContext)
     }
   }
