@@ -224,6 +224,7 @@ export async function getLiveCatalog() {
       supabase.from('catalog_episodes').select('anime_slug,season,episode,name,url').eq('removed', false).order('season').order('episode'),
     ])
     if (animeError || episodeError || !rows?.length) return catalog.list
+    const bundledBySlug = new Map(catalog.list.map((anime) => [anime.slug, anime]))
     const episodeMap = new Map<string, Season[]>()
     for (const ep of episodes ?? []) {
       const seasons = episodeMap.get(ep.anime_slug) ?? []
@@ -231,10 +232,13 @@ export async function getLiveCatalog() {
       if (!season) { season = { number: ep.season, episodes: [] }; seasons.push(season); episodeMap.set(ep.anime_slug, seasons) }
       season.episodes.push({ number: ep.episode, name: ep.name, url: toMirrorUrl(ep.url) })
     }
-    return rows.map((row) => {
+    const live = rows.map((row) => {
       const seasons = (episodeMap.get(row.slug) ?? []).sort((a, b) => a.number - b.number)
       return { slug: row.slug, title: row.title, poster: row.poster ?? '', seasons, totalEpisodes: seasons.reduce((total, season) => total + season.episodes.length, 0) }
-    }).filter((anime) => anime.seasons.length > 0)
+    })
+    const liveSlugs = new Set(live.map((anime) => anime.slug))
+    const bundled = catalog.list.filter((anime) => !liveSlugs.has(anime.slug))
+    return [...live, ...bundled]
   } catch {
     return catalog.list
   }
