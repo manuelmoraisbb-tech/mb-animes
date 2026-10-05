@@ -1,10 +1,27 @@
-import { getAllAnimes } from '@/lib/catalog'
+import { getAllAnimes, getAnimeBySlug, type Anime } from '@/lib/catalog'
 import Link from 'next/link'
 
 export default function AdminEpisodesPage({ searchParams }: { searchParams?: { anime?: string } }) {
   const animes = getAllAnimes()
   const selectedSlug = searchParams?.anime || animes[0]?.slug
   const selectedAnime = animes.find((anime) => anime.slug === selectedSlug) || animes[0]
+
+  async function handleDelete(animeSlug: string, season: number, episodeNumber: number) {
+    if (!confirm(`Deseja excluir o episódio ${episodeNumber}?`)) return
+
+    const response = await fetch('/api/admin/episodios', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ animeSlug, season, episodeNumber }),
+    })
+
+    if (response.ok) {
+      window.location.reload()
+      return
+    }
+
+    alert('Erro ao excluir episódio')
+  }
 
   return (
     <div>
@@ -34,9 +51,18 @@ export default function AdminEpisodesPage({ searchParams }: { searchParams?: { a
               <h2 className="mb-3 text-lg font-bold">Temporada {season.number}</h2>
               <div className="space-y-2">
                 {season.episodes.map((episode) => (
-                  <div key={episode.number} className="rounded-lg border border-border bg-background p-3">
-                    <p className="font-medium">Episódio {episode.number}</p>
-                    <p className="text-sm text-muted-foreground">{episode.name}</p>
+                  <div key={episode.number} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-3">
+                    <div>
+                      <p className="font-medium">Episódio {episode.number}</p>
+                      <p className="text-sm text-muted-foreground">{episode.name}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(selectedAnime.slug, season.number, episode.number)}
+                      className="rounded-md border border-red-600 px-3 py-1.5 text-sm text-red-600 hover:bg-red-600/10"
+                    >
+                      Excluir
+                    </button>
                   </div>
                 ))}
               </div>
