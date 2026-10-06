@@ -55,6 +55,8 @@ export function VideoPlayer({
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const clickTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
+  const isBloggerPlayer = /^https?:\/\/([a-z0-9-]+\.)?blogger\.com\/video\.g(?:\?|$)/i.test(src)
+
   const [attempt, setAttempt] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [started, setStarted] = useState(false)
@@ -185,55 +187,74 @@ export function VideoPlayer({
       onMouseLeave={() => playing && setControlsVisible(false)}
       className={`group relative aspect-video w-full select-none overflow-hidden bg-background ${hideUi ? 'cursor-none' : ''} ${fullscreen ? 'h-full' : ''}`}
     >
-      <video
-        key={attempt}
-        ref={videoRef}
-        src={src}
-        poster={poster}
-        autoPlay
-        playsInline
-        preload="metadata"
-        aria-label={`Episódio: ${title}`}
-        className="size-full bg-background object-contain"
-        onPlay={() => {
-          setPlaying(true)
-          setStarted(true)
-          showControls()
-        }}
-        onPause={() => {
-          setPlaying(false)
-          setControlsVisible(true)
-        }}
-        onWaiting={() => setWaiting(true)}
-        onCanPlay={() => setWaiting(false)}
-        onPlaying={() => setWaiting(false)}
-        onLoadedMetadata={(e) => {
-          setDuration(e.currentTarget.duration)
-          e.currentTarget.playbackRate = speed
-        }}
-        onDurationChange={(e) => setDuration(e.currentTarget.duration)}
-        onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
-        onProgress={(e) => {
-          const b = e.currentTarget.buffered
-          if (b.length) setBuffered(b.end(b.length - 1))
-        }}
-        onVolumeChange={(e) => {
-          setVolume(e.currentTarget.volume)
-          setMuted(e.currentTarget.muted)
-        }}
-        onError={() => {
-          setFailed(true)
-          setWaiting(false)
-        }}
-        onEnded={() => nextHref && router.push(nextHref)}
-      />
+      {isBloggerPlayer ? (
+        <iframe
+          key={attempt}
+          src={src}
+          title={`Episódio: ${title}`}
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          className="size-full border-0 bg-black"
+          onLoad={() => {
+            setWaiting(false)
+            setStarted(true)
+          }}
+          onError={() => {
+            setFailed(true)
+            setWaiting(false)
+          }}
+        />
+      ) : (
+        <video
+          key={attempt}
+          ref={videoRef}
+          src={src}
+          poster={poster}
+          autoPlay
+          playsInline
+          preload="metadata"
+          aria-label={`Episódio: ${title}`}
+          className="size-full bg-background object-contain"
+          onPlay={() => {
+            setPlaying(true)
+            setStarted(true)
+            showControls()
+          }}
+          onPause={() => {
+            setPlaying(false)
+            setControlsVisible(true)
+          }}
+          onWaiting={() => setWaiting(true)}
+          onCanPlay={() => setWaiting(false)}
+          onPlaying={() => setWaiting(false)}
+          onLoadedMetadata={(e) => {
+            setDuration(e.currentTarget.duration)
+            e.currentTarget.playbackRate = speed
+          }}
+          onDurationChange={(e) => setDuration(e.currentTarget.duration)}
+          onTimeUpdate={(e) => setCurrent(e.currentTarget.currentTime)}
+          onProgress={(e) => {
+            const b = e.currentTarget.buffered
+            if (b.length) setBuffered(b.end(b.length - 1))
+          }}
+          onVolumeChange={(e) => {
+            setVolume(e.currentTarget.volume)
+            setMuted(e.currentTarget.muted)
+          }}
+          onError={() => {
+            setFailed(true)
+            setWaiting(false)
+          }}
+          onEnded={() => nextHref && router.push(nextHref)}
+        />
+      )}
 
       <button
         type="button"
         aria-label={playing ? 'Pausar' : 'Reproduzir'}
         onClick={handleSurfaceClick}
         onDoubleClick={handleSurfaceDoubleClick}
-        className="absolute inset-0 z-0 outline-none"
+        className={`absolute inset-0 z-0 outline-none ${isBloggerPlayer ? 'pointer-events-none' : ''}`}
       />
 
       <div
@@ -244,13 +265,13 @@ export function VideoPlayer({
         <p className="line-clamp-1 text-sm font-black md:text-lg">{title}</p>
       </div>
 
-      {waiting && !failed && (
+      {waiting && !failed && !isBloggerPlayer && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           <Loader2 className="size-12 animate-spin text-primary" aria-label="Carregando" />
         </div>
       )}
 
-      {!playing && !waiting && !failed && (
+      {!isBloggerPlayer && !playing && !waiting && !failed && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           <span className="flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl transition group-hover:scale-110 md:size-20">
             <Play className="ml-1 size-8 fill-current md:size-10" aria-hidden="true" />
@@ -415,7 +436,7 @@ export function VideoPlayer({
         </div>
       )}
 
-      {!started && !failed && <span className="sr-only">Carregando o episódio</span>}
+      {!isBloggerPlayer && !started && !failed && <span className="sr-only">Carregando o episódio</span>}
     </div>
   )
 }
