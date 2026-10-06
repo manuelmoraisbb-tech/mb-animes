@@ -7,11 +7,10 @@ import { AnimeRow } from '@/components/anime-row'
 import { SeasonTabs } from '@/components/season-tabs'
 import { EpisodeList } from '@/components/episode-list'
 import { Comments } from '@/components/comments'
-import { getAllAnimes, getLiveAnimeBySlug, getRelated, toSummary } from '@/lib/catalog'
+import { getLiveAnimeBySlug, getRelated, toSummary } from '@/lib/catalog'
 
-export function generateStaticParams() {
-  return getAllAnimes().map((a) => ({ slug: a.slug }))
-}
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function generateMetadata({
   params,

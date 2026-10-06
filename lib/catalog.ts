@@ -217,16 +217,19 @@ export function getRelated(anime: Anime, count: number) {
 /** Reads the live Supabase catalog and falls back to the bundled JSON during setup. */
 export async function getLiveCatalog() {
   try {
-    const { createAdminClient } = await import('@/lib/supabase/server')
-    const supabase = await createAdminClient()
-    const [{ data: rows, error: animeError }, { data: episodes, error: episodeError }] = await Promise.all([
-      supabase.from('animes').select('id,slug,title,poster').order('title'),
-      supabase.from('episodes').select('*').order('season').order('number'),
-    ])
-    if (animeError || episodeError || !rows?.length) {
-      console.error('[v0] live catalog query failed', { animeError: animeError?.message, episodeError: episodeError?.message, rows: rows?.length ?? 0 })
-      return catalog.list
-    }
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY
+    if (!supabaseUrl || !supabaseKey) return catalog.list
+    const headers = { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+    const animeResponse = await fetch(`${supabaseUrl}/rest/v1/animes?select=id,slug,title,poster&order=title.asc`, { headers, cache: 'no-store' })
+    if (!animeResponse.ok) return catalog.list
+    const rows = await animeResponse.json() as Array<{ id: number; slug: string; title: string; poster: string | null }>
+    const episodePages = await Promise.all(Array.from({ length: 20 }, (_, page) => fetch(
+      `${supabaseUrl}/rest/v1/episodes?select=anime_id,season,number,name,url&order=anime_id.asc,season.asc,number.asc`,
+      { headers: { ...headers, Range: `${page * 1000}-${(page + 1) * 1000 - 1}`, Prefer: 'count=exact' }, cache: 'no-store' },
+    ).then(async (response) => response.ok ? await response.json() as Array<{ anime_id: number; season: number; number: number; name: string; url: string }> : [])))
+    const episodes = episodePages.flat()
+    if (!rows.length) return catalog.list
     const episodeMap = new Map<number, Season[]>()
     for (const ep of episodes ?? []) {
       const seasons = episodeMap.get(ep.anime_id) ?? []
