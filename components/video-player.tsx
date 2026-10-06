@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Check,
@@ -56,6 +56,11 @@ export function VideoPlayer({
   const clickTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const isBloggerPlayer = /^https?:\/\/([a-z0-9-]+\.)?blogger\.com\/video\.g(?:\?|$)/i.test(src)
+  const bloggerToken = useMemo(() => {
+    if (!isBloggerPlayer) return null
+    try { return new URL(src).searchParams.get('token') } catch { return null }
+  }, [isBloggerPlayer, src])
+  const playbackSrc = bloggerToken ? `/api/blogger?token=${encodeURIComponent(bloggerToken)}` : src
 
   const [attempt, setAttempt] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -187,28 +192,10 @@ export function VideoPlayer({
       onMouseLeave={() => playing && setControlsVisible(false)}
       className={`group relative aspect-video w-full select-none overflow-hidden bg-background ${hideUi ? 'cursor-none' : ''} ${fullscreen ? 'h-full' : ''}`}
     >
-      {isBloggerPlayer ? (
-        <iframe
-          key={attempt}
-          src={src}
-          title={`Episódio: ${title}`}
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowFullScreen
-          className="size-full border-0 bg-black"
-          onLoad={() => {
-            setWaiting(false)
-            setStarted(true)
-          }}
-          onError={() => {
-            setFailed(true)
-            setWaiting(false)
-          }}
-        />
-      ) : (
-        <video
+      <video
           key={attempt}
           ref={videoRef}
-          src={src}
+          src={playbackSrc}
           poster={poster}
           autoPlay
           playsInline
@@ -247,7 +234,6 @@ export function VideoPlayer({
           }}
           onEnded={() => nextHref && router.push(nextHref)}
         />
-      )}
 
       <button
         type="button"
