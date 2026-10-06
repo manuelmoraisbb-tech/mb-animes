@@ -30,7 +30,12 @@ export async function importBundledCatalog() {
       if (!Number.isInteger(season) || season < 1 || !Number.isInteger(number) || number < 1 || !/^https?:\/\//i.test(url)) return []
       return [{ anime_id: anime.id, season, number, name: episode.nome ?? `${title} S${String(season).padStart(2, '0')}E${String(number).padStart(2, '0')}`, url, tipo: episode.tipo ?? 'indefinido' }]
     }))
-    if (rows.length) { const { error } = await supabase.from('episodes').upsert(rows, { onConflict: 'anime_id,season,number' }); if (error) finish(null, error.message, false); episodeCount += rows.length }
+    if (rows.length) {
+      const uniqueRows = [...new Map(rows.map((row) => [`${row.anime_id}:${row.season}:${row.number}`, row])).values()]
+      const { error } = await supabase.from('episodes').upsert(uniqueRows, { onConflict: 'anime_id,season,number' })
+      if (error) finish(null, error.message, false)
+      episodeCount += uniqueRows.length
+    }
     animeCount++
   }
   revalidatePath('/', 'layout')

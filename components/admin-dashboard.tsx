@@ -75,8 +75,9 @@ export function AdminDashboard() {
       const { data: animeRows, error: animeError } = await supabase.from('animes').select('id,slug').in('slug', slugs)
       if (animeError) throw animeError
       const ids = new Map((animeRows ?? []).map((row) => [row.slug, row.id]))
-      const payload = episodes.map((item) => ({ anime_id: ids.get(item.anime_slug), season: item.season, number: item.episode, name: item.name, url: item.url })).filter((item) => item.anime_id)
-      const { error } = await supabase.from('episodes').upsert(payload, { onConflict: 'anime_id,season,number' })
+      const payload = episodes.map((item) => ({ anime_id: ids.get(item.anime_slug), season: item.season, number: item.episode, name: item.name, url: item.url })).filter((item): item is { anime_id: number; season: number; number: number; name: string; url: string } => Boolean(item.anime_id))
+      const uniquePayload = [...new Map(payload.map((item) => [`${item.anime_id}:${item.season}:${item.number}`, item])).values()]
+      const { error } = await supabase.from('episodes').upsert(uniquePayload, { onConflict: 'anime_id,season,number' })
       if (error) throw error
     }
     await supabase.from('admin_log').insert({ admin_id: user?.id, action: 'import_json', detail: `${animes.length} animes, ${episodes.length} episódios` }); setPreview([]); setJson('')
