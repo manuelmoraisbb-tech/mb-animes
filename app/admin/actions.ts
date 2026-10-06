@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdmin, slugify } from '@/lib/admin'
+import links from '@/data/links.json'
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? '').trim()
 const number = (form: FormData, key: string) => Number(text(form, key))
@@ -12,6 +13,28 @@ const validUrl = (value: string) => /^https?:\/\//i.test(value)
 function finish(slug: string | null, message: string, ok = true): never {
   revalidatePath('/', 'layout')
   redirect(`${slug ? `/admin/${slug}` : '/admin'}?msg=${encodeURIComponent(message)}&ok=${ok ? 1 : 0}`)
+}
+
+export async function importBundledCatalog() {
+  const supabase = await requireAdmin()
+  const catalog = links as Record<string, { poster?: string; temporadas?: Record<string, Array<{ episodio?: number; nome?: string; tipo?: string; url?: string }>> }>
+  let animeCount = 0
+  let episodeCount = 0
+  for (const [title, value] of Object.entries(catalog)) {
+    const slug = slugify(title)
+    if (!slug) continue
+    const { data: anime, error: animeError } = await supabase.from('animes').upsert({ title, slug, poster: value.poster ?? '' }, { onConflict: 'slug' }).select('id').single()
+    if (animeError || !anime) finish(null, animeError?.message ?? 'Não foi possível importar o anime.', false)
+    const rows = Object.entries(value.temporadas ?? {}).flatMap(([seasonKey, episodes]) => episodes.flatMap((episode) => {
+      const season = Number(seasonKey); const number = Number(episode.episodio); const url = String(episode.url ?? '').trim()
+      if (!Number.isInteger(season) || season < 1 || !Number.isInteger(number) || number < 1 || !/^https?:\/\//i.test(url)) return []
+      return [{ anime_id: anime.id, season, number, name: episode.nome ?? `${title} S${String(season).padStart(2, '0')}E${String(number).padStart(2, '0')}`, url, tipo: episode.tipo ?? 'indefinido' }]
+    }))
+    if (rows.length) { const { error } = await supabase.from('episodes').upsert(rows, { onConflict: 'anime_id,season,number' }); if (error) finish(null, error.message, false); episodeCount += rows.length }
+    animeCount++
+  }
+  revalidatePath('/', 'layout')
+  redirect(`/admin?msg=${encodeURIComponent(`${animeCount} animes e ${episodeCount} episódios importados do links.json.`)}&ok=1`)
 }
 
 export async function logoutAction() {
