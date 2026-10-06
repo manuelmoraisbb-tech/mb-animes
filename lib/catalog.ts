@@ -220,20 +220,19 @@ export async function getLiveCatalog() {
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
     const [{ data: rows, error: animeError }, { data: episodes, error: episodeError }] = await Promise.all([
-      supabase.from('catalog_animes').select('slug,title,poster,hidden,featured').eq('hidden', false).order('title'),
-      supabase.from('catalog_episodes').select('anime_slug,season,episode,name,url').eq('removed', false).order('season').order('episode'),
+      supabase.from('animes').select('id,slug,title,poster,hidden,featured').eq('hidden', false).order('title'),
+      supabase.from('episodes').select('anime_id,season,number,name,url').order('season').order('number'),
     ])
     if (animeError || episodeError || !rows?.length) return catalog.list
-    const bundledBySlug = new Map(catalog.list.map((anime) => [anime.slug, anime]))
-    const episodeMap = new Map<string, Season[]>()
+    const episodeMap = new Map<number, Season[]>()
     for (const ep of episodes ?? []) {
-      const seasons = episodeMap.get(ep.anime_slug) ?? []
+      const seasons = episodeMap.get(ep.anime_id) ?? []
       let season = seasons.find((item) => item.number === ep.season)
-      if (!season) { season = { number: ep.season, episodes: [] }; seasons.push(season); episodeMap.set(ep.anime_slug, seasons) }
-      season.episodes.push({ number: ep.episode, name: ep.name, url: toMirrorUrl(ep.url) })
+      if (!season) { season = { number: ep.season, episodes: [] }; seasons.push(season); episodeMap.set(ep.anime_id, seasons) }
+      season.episodes.push({ number: ep.number, name: ep.name, url: toMirrorUrl(ep.url) })
     }
     const live = rows.map((row) => {
-      const seasons = (episodeMap.get(row.slug) ?? []).sort((a, b) => a.number - b.number)
+      const seasons = (episodeMap.get(row.id) ?? []).sort((a, b) => a.number - b.number)
       return { slug: row.slug, title: row.title, poster: row.poster ?? '', seasons, totalEpisodes: seasons.reduce((total, season) => total + season.episodes.length, 0) }
     })
     const liveSlugs = new Set(live.map((anime) => anime.slug))
