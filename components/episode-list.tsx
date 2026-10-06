@@ -36,13 +36,17 @@ export function EpisodeList({
               <div
                 className={`relative aspect-video shrink-0 overflow-hidden bg-card ${compact ? 'w-36' : 'w-full'}`}
               >
-                <Image
-                  src={poster}
-                  alt=""
-                  fill
-                  sizes={compact ? '144px' : '(min-width: 1024px) 25vw, 100vw'}
-                  className="object-cover object-top transition duration-300 group-hover:scale-105"
-                />
+                {poster ? (
+                  <Image
+                    src={poster}
+                    alt=""
+                    fill
+                    sizes={compact ? '144px' : '(min-width: 1024px) 25vw, 100vw'}
+                    className="object-cover object-top transition duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="size-full bg-gradient-to-br from-primary/20 via-card to-background" aria-hidden="true" />
+                )}
                 <div className="absolute inset-0 flex items-center justify-center bg-background/40 opacity-0 transition group-hover:opacity-100">
                   <Play className="size-8 fill-foreground text-foreground" aria-hidden="true" />
                 </div>
