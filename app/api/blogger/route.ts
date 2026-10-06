@@ -29,6 +29,7 @@ async function resolve(token: string) {
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token')
   const name = (request.nextUrl.searchParams.get('name') ?? 'episodio').replace(/[^\w-]+/g, '_')
+  const download = request.nextUrl.searchParams.get('download') === '1'
   if (!token) return new Response('falta o token', { status: 400 })
 
   const link = await resolve(token)
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   const headers = new Headers({
     'Content-Type': upstream.headers.get('content-type') ?? 'video/mp4',
-    'Content-Disposition': `inline; filename="${name}.mp4"`,
+    'Content-Disposition': `${download ? 'attachment' : 'inline'}; filename="${name}.mp4"`,
     'Accept-Ranges': 'bytes',
     'Cache-Control': 'no-store',
   })

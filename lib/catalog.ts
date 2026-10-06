@@ -155,6 +155,10 @@ export function getPlayableUrl(url: string) {
 /** Always proxied so the browser gets a same-origin file with a proper download filename. */
 export function getDownloadUrl(url: string, fileName: string) {
   const ext = url.split('?')[0].match(/\.(mp4|mkv|avi|m4v|webm|ts)$/i)?.[0] ?? '.mp4'
+  if (/^https?:\/\/([a-z0-9-]+\.)?blogger\.com\/video\.g(?:\?|$)/i.test(url)) {
+    const token = new URL(url).searchParams.get('token')
+    return token ? `/api/blogger?token=${encodeURIComponent(token)}&name=${encodeURIComponent(fileName)}&download=1` : url
+  }
   return `/api/stream?url=${encodeURIComponent(url)}&download=${encodeURIComponent(fileName + ext)}`
 }
 
