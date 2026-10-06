@@ -223,7 +223,10 @@ export async function getLiveCatalog() {
       supabase.from('animes').select('id,slug,title,poster').order('title'),
       supabase.from('episodes').select('*').order('season').order('number'),
     ])
-    if (animeError || episodeError || !rows?.length) return catalog.list
+    if (animeError || episodeError || !rows?.length) {
+      console.error('[v0] live catalog query failed', { animeError: animeError?.message, episodeError: episodeError?.message, rows: rows?.length ?? 0 })
+      return catalog.list
+    }
     const episodeMap = new Map<number, Season[]>()
     for (const ep of episodes ?? []) {
       const seasons = episodeMap.get(ep.anime_id) ?? []
