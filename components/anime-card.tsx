@@ -14,14 +14,20 @@ export function AnimeCard({ anime, priority = false }: { anime: AnimeSummary; pr
       className="group relative flex flex-col gap-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <div className="relative aspect-[2/3] overflow-hidden bg-card">
-        <Image
-          src={anime.poster}
-          alt={`Pôster de ${anime.title}`}
-          fill
-          priority={priority}
-          sizes="(min-width: 1024px) 200px, (min-width: 640px) 25vw, 45vw"
-          className="object-cover transition duration-300 group-hover:scale-105"
-        />
+        {anime.poster ? (
+          <Image
+            src={anime.poster}
+            alt={`Pôster de ${anime.title}`}
+            fill
+            priority={priority}
+            sizes="(min-width: 1024px) 200px, (min-width: 640px) 25vw, 45vw"
+            className="object-cover transition duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex size-full items-center justify-center bg-gradient-to-br from-primary/30 via-card to-background p-4 text-center text-sm font-bold text-muted-foreground" aria-label={`Sem poster para ${anime.title}`}>
+            {anime.title}
+          </div>
+        )}
       </div>
       <div className="flex flex-col gap-0.5">
         <h3 className="line-clamp-2 text-sm font-bold leading-snug">{anime.title}</h3>

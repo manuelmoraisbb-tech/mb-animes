@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { VideoPlayer } from '@/components/video-player'
 import { EpisodeList } from '@/components/episode-list'
 import { Comments } from '@/components/comments'
-import { getAnimeBySlug, getDownloadUrl, getPlayableUrl, type Anime } from '@/lib/catalog'
+import { getLiveAnimeBySlug, getDownloadUrl, getPlayableUrl, type Anime } from '@/lib/catalog'
 
 type Params = Promise<{ slug: string; temporada: string; episodio: string }>
 
@@ -40,14 +40,14 @@ function resolve(anime: Anime, temporada: string, episodio: string) {
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug, temporada, episodio } = await params
-  const anime = getAnimeBySlug(slug)
+  const anime = await getLiveAnimeBySlug(slug)
   if (!anime) return { title: 'Episódio não encontrado' }
   return { title: `${anime.title} — T${temporada} E${episodio}` }
 }
 
 export default async function WatchPage({ params }: { params: Params }) {
   const { slug, temporada, episodio } = await params
-  const anime = getAnimeBySlug(slug)
+  const anime = await getLiveAnimeBySlug(slug)
   if (!anime) notFound()
   const current = resolve(anime, temporada, episodio)
   if (!current) notFound()

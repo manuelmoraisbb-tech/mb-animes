@@ -38,32 +38,36 @@ export function HomeHero({ slides }: { slides: HeroSlide[] }) {
           aria-hidden={i !== index}
           className={`absolute inset-0 -z-10 transition-opacity duration-700 ${i === index ? 'opacity-100' : 'opacity-0'}`}
         >
-          <Image
-            src={s.poster}
-            alt=""
-            fill
-            priority={i === 0}
-            sizes="100vw"
-            className="scale-110 object-cover opacity-40 blur-2xl"
-          />
-          <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
-            <Image
-              src={s.poster}
-              alt=""
-              fill
-              priority={i === 0}
-              sizes="50vw"
-              className="object-cover object-top [mask-image:linear-gradient(to_right,transparent,black_40%)]"
-            />
-          </div>
-          <Image
-            src={s.poster}
-            alt=""
-            fill
-            priority={i === 0}
-            sizes="100vw"
-            className="object-cover object-top md:hidden"
-          />
+          {s.poster && (
+            <>
+              <Image
+                src={s.poster}
+                alt=""
+                fill
+                priority={i === 0}
+                sizes="100vw"
+                className="scale-110 object-cover opacity-40 blur-2xl"
+              />
+              <div className="absolute inset-y-0 right-0 hidden w-1/2 md:block">
+                <Image
+                  src={s.poster}
+                  alt=""
+                  fill
+                  priority={i === 0}
+                  sizes="50vw"
+                  className="object-cover object-top [mask-image:linear-gradient(to_right,transparent,black_40%)]"
+                />
+              </div>
+              <Image
+                src={s.poster}
+                alt=""
+                fill
+                priority={i === 0}
+                sizes="100vw"
+                className="object-cover object-top md:hidden"
+              />
+            </>
+          )}
         </div>
       ))}
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-background via-background/60 to-transparent md:bg-gradient-to-r md:from-background md:via-background/80" />

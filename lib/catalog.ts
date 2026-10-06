@@ -155,6 +155,10 @@ export function getPlayableUrl(url: string) {
 /** Always proxied so the browser gets a same-origin file with a proper download filename. */
 export function getDownloadUrl(url: string, fileName: string) {
   const ext = url.split('?')[0].match(/\.(mp4|mkv|avi|m4v|webm|ts)$/i)?.[0] ?? '.mp4'
+  if (/^https?:\/\/([a-z0-9-]+\.)?blogger\.com\/video\.g(?:\?|$)/i.test(url)) {
+    const token = new URL(url).searchParams.get('token')
+    return token ? `/api/blogger?token=${encodeURIComponent(token)}&name=${encodeURIComponent(fileName)}&download=1` : url
+  }
   return `/api/stream?url=${encodeURIComponent(url)}&download=${encodeURIComponent(fileName + ext)}`
 }
 
@@ -212,4 +216,43 @@ export function getRelated(anime: Anime, count: number) {
     (a) => a.slug !== anime.slug && !related.includes(a),
   )
   return [...related, ...fillers].slice(0, count)
+}
+
+/** Reads the live Supabase catalog and falls back to the bundled JSON during setup. */
+export async function getLiveCatalog() {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY
+    if (!supabaseUrl || !supabaseKey) return catalog.list
+    const headers = { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+    const animeResponse = await fetch(`${supabaseUrl}/rest/v1/animes?select=id,slug,title,poster&order=title.asc`, { headers, cache: 'no-store' })
+    if (!animeResponse.ok) return catalog.list
+    const rows = await animeResponse.json() as Array<{ id: number; slug: string; title: string; poster: string | null }>
+    const episodePages = await Promise.all(Array.from({ length: 20 }, (_, page) => fetch(
+      `${supabaseUrl}/rest/v1/episodes?select=anime_id,season,number,name,url&order=anime_id.asc,season.asc,number.asc`,
+      { headers: { ...headers, Range: `${page * 1000}-${(page + 1) * 1000 - 1}`, Prefer: 'count=exact' }, cache: 'no-store' },
+    ).then(async (response) => response.ok ? await response.json() as Array<{ anime_id: number; season: number; number: number; name: string; url: string }> : [])))
+    const episodes = episodePages.flat()
+    if (!rows.length) return catalog.list
+    const episodeMap = new Map<number, Season[]>()
+    for (const ep of episodes ?? []) {
+      const seasons = episodeMap.get(ep.anime_id) ?? []
+      let season = seasons.find((item) => item.number === ep.season)
+      if (!season) { season = { number: ep.season, episodes: [] }; seasons.push(season); episodeMap.set(ep.anime_id, seasons) }
+      season.episodes.push({ number: ep.number, name: ep.name, url: toMirrorUrl(ep.url) })
+    }
+    const live = rows.map((row) => {
+      const seasons = (episodeMap.get(row.id) ?? []).sort((a, b) => a.number - b.number)
+      return { slug: row.slug, title: row.title, poster: row.poster ?? '', seasons, totalEpisodes: seasons.reduce((total, season) => total + season.episodes.length, 0) }
+    })
+    const liveSlugs = new Set(live.map((anime) => anime.slug))
+    const bundled = catalog.list.filter((anime) => !liveSlugs.has(anime.slug))
+    return [...live, ...bundled]
+  } catch {
+    return catalog.list
+  }
+}
+
+export async function getLiveAnimeBySlug(slug: string) {
+  return (await getLiveCatalog()).find((anime) => anime.slug === slug)
 }

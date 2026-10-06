@@ -7,11 +7,10 @@ import { AnimeRow } from '@/components/anime-row'
 import { SeasonTabs } from '@/components/season-tabs'
 import { EpisodeList } from '@/components/episode-list'
 import { Comments } from '@/components/comments'
-import { getAllAnimes, getAnimeBySlug, getRelated, toSummary } from '@/lib/catalog'
+import { getLiveAnimeBySlug, getRelated, toSummary } from '@/lib/catalog'
 
-export function generateStaticParams() {
-  return getAllAnimes().map((a) => ({ slug: a.slug }))
-}
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function generateMetadata({
   params,
@@ -19,7 +18,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const anime = getAnimeBySlug(slug)
+  const anime = await getLiveAnimeBySlug(slug)
   if (!anime) return { title: 'Anime não encontrado' }
   return {
     title: anime.title,
@@ -36,7 +35,7 @@ export default async function AnimePage({
   searchParams: Promise<{ t?: string }>
 }) {
   const [{ slug }, { t }] = await Promise.all([params, searchParams])
-  const anime = getAnimeBySlug(slug)
+  const anime = await getLiveAnimeBySlug(slug)
   if (!anime) notFound()
 
   const season = anime.seasons.find((s) => String(s.number) === t) ?? anime.seasons[0]

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { CatalogBrowser } from '@/components/catalog-browser'
-import { getAllSummaries } from '@/lib/catalog'
+import { getLiveCatalog, toSummary } from '@/lib/catalog'
 
 export const metadata: Metadata = {
   title: 'Catálogo',
@@ -13,7 +13,7 @@ export default async function CatalogPage({
   searchParams: Promise<{ q?: string }>
 }) {
   const { q } = await searchParams
-  const animes = getAllSummaries()
+  const animes = (await getLiveCatalog()).map(toSummary)
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-10 md:px-6">

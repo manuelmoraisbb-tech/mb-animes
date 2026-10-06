@@ -1,33 +1,13 @@
-import { getCatalogStats } from '@/lib/catalog'
 import Link from 'next/link'
+import { listAnimes, slugify } from '@/lib/admin'
+import { importBundledCatalog } from '@/app/admin/actions'
+import { AdminBar, Notice, btnCls, inputCls } from '@/components/admin-ui'
 
-export default function AdminDashboardPage() {
-  const stats = getCatalogStats()
+export const metadata = { title: 'Admin | MB Animes', robots: { index: false } }
+export const dynamic = 'force-dynamic'
 
-  return (
-    <div>
-      <h1 className="mb-8 text-3xl font-black">Dashboard</h1>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-6">
-          <p className="text-sm text-muted-foreground">Total de animes</p>
-          <p className="mt-2 text-4xl font-black">{stats.animes}</p>
-        </div>
-
-        <div className="rounded-xl border border-border bg-card p-6">
-          <p className="text-sm text-muted-foreground">Total de episódios</p>
-          <p className="mt-2 text-4xl font-black">{stats.episodes}</p>
-        </div>
-      </div>
-
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        <Link href="/admin/animes/novo" className="rounded-xl bg-primary px-4 py-3 text-center font-semibold text-primary-foreground">
-          + Novo anime
-        </Link>
-        <Link href="/admin/episodios/novo" className="rounded-xl bg-secondary px-4 py-3 text-center font-semibold text-secondary-foreground">
-          + Novo episódio
-        </Link>
-      </div>
-    </div>
-  )
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ q?: string; msg?: string; ok?: string }> }) {
+  const { q = '', msg, ok } = await searchParams; const all = await listAnimes(); const total = all.reduce((sum, anime) => sum + anime.episodes, 0); const needle = slugify(q); const rows = all.filter((anime) => !needle || slugify(anime.title).includes(needle))
+  return <><AdminBar /><main className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-6"><Notice msg={msg} ok={ok} /><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-primary">Catálogo Supabase</p><h1 className="mt-2 font-serif text-3xl font-bold">Painel administrativo</h1><p className="mt-1 text-sm text-muted-foreground">{all.length} animes · {total} episódios</p></div><div className="flex flex-wrap gap-2"><form action={importBundledCatalog}><button className={btnCls}>Importar links.json</button></form><Link href="/admin/novo" className={btnCls}>+ Novo anime</Link></div></div><form className="flex gap-2"><input name="q" defaultValue={q} placeholder="Procurar anime…" className={inputCls} /><button className={btnCls}>Buscar</button></form><ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-card">{rows.map((anime) => <li key={anime.id}><Link href={`/admin/${anime.slug}`} className="flex items-center gap-3 p-3 hover:bg-muted"><img src={anime.poster || '/placeholder.svg'} alt="" className="h-16 w-11 shrink-0 rounded bg-muted object-cover" /><span className="min-w-0 flex-1"><span className="block truncate font-bold">{anime.title}</span><span className="text-xs text-muted-foreground">{anime.seasons} temporada(s) · {anime.episodes} episódio(s)</span></span><span className="text-sm text-primary">Editar</span></Link></li>)}{rows.length === 0 && <li className="p-4 text-sm text-muted-foreground">Nada encontrado.</li>}</ul></main></>
 }
+
