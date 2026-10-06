@@ -217,11 +217,11 @@ export function getRelated(anime: Anime, count: number) {
 /** Reads the live Supabase catalog and falls back to the bundled JSON during setup. */
 export async function getLiveCatalog() {
   try {
-    const { createClient } = await import('@/lib/supabase/server')
-    const supabase = await createClient()
+    const { createAdminClient } = await import('@/lib/supabase/server')
+    const supabase = await createAdminClient()
     const [{ data: rows, error: animeError }, { data: episodes, error: episodeError }] = await Promise.all([
-      supabase.from('animes').select('id,slug,title,poster,hidden,featured').eq('hidden', false).order('title'),
-      supabase.from('episodes').select('anime_id,season,number,name,url').order('season').order('number'),
+      supabase.from('animes').select('id,slug,title,poster').order('title'),
+      supabase.from('episodes').select('*').order('season').order('number'),
     ])
     if (animeError || episodeError || !rows?.length) return catalog.list
     const episodeMap = new Map<number, Season[]>()
