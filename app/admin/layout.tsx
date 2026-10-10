@@ -2,8 +2,6 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
-const ADMIN_TOKEN = process.env.ADMIN_PASSWORD || 'admin123'
-
 async function logoutAction() {
   'use server'
   const cookieStore = await cookies()
@@ -18,13 +16,6 @@ async function logoutAction() {
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('mb_admin_token')?.value
-
-  if (token !== ADMIN_TOKEN) {
-    redirect('/admin/login')
-  }
-
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <aside className="w-64 border-r border-border bg-muted/30 p-4">
