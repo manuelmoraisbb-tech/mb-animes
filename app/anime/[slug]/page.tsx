@@ -83,10 +83,18 @@ export default async function AnimePage({
         <h2 id="episodes-heading" className="text-xl font-black md:text-2xl">
           Episódios
         </h2>
-        {anime.seasons.length > 1 && (
-          <SeasonTabs slug={anime.slug} seasons={anime.seasons.map((s) => s.number)} current={season.number} />
+        {season ? (
+          <>
+            {anime.seasons.length > 1 && (
+              <SeasonTabs slug={anime.slug} seasons={anime.seasons.map((s) => s.number)} current={season.number} />
+            )}
+            <EpisodeList slug={anime.slug} season={season} poster={anime.poster} />
+          </>
+        ) : (
+          <div className="border border-border bg-card p-6 text-sm text-muted-foreground">
+            Este anime ainda não tem episódios disponíveis. Adiciona uma temporada e os episódios pelo painel administrativo.
+          </div>
         )}
-        <EpisodeList slug={anime.slug} season={season} poster={anime.poster} />
       </section>
 
       <AnimeRow title="Você também pode curtir" animes={getRelated(anime, 14).map(toSummary)} />
