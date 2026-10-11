@@ -56,11 +56,13 @@ export function VideoPlayer({
   const clickTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const isBloggerPlayer = /^https?:\/\/([a-z0-9-]+\.)?blogger\.com\/video\.g(?:\?|$)/i.test(src)
+  const isAnidrivePlayer = /^https?:\/\/([a-z0-9-]+\.)?anidrive\.click(?:\/|$)/i.test(src)
   const bloggerToken = useMemo(() => {
     if (!isBloggerPlayer) return null
     try { return new URL(src).searchParams.get('token') } catch { return null }
   }, [isBloggerPlayer, src])
   const playbackSrc = bloggerToken ? `/api/blogger?token=${encodeURIComponent(bloggerToken)}` : src
+  const isEmbeddedPlayer = isBloggerPlayer || isAnidrivePlayer
 
   const [attempt, setAttempt] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -192,7 +194,25 @@ export function VideoPlayer({
       onMouseLeave={() => playing && setControlsVisible(false)}
       className={`group relative aspect-video w-full select-none overflow-hidden bg-background ${hideUi ? 'cursor-none' : ''} ${fullscreen ? 'h-full' : ''}`}
     >
-      <video
+      {isAnidrivePlayer ? (
+        <iframe
+          key={attempt}
+          src={src}
+          title={`Episódio: ${title}`}
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          className="size-full border-0 bg-black"
+          onLoad={() => {
+            setWaiting(false)
+            setStarted(true)
+          }}
+          onError={() => {
+            setFailed(true)
+            setWaiting(false)
+          }}
+        />
+      ) : (
+        <video
           key={attempt}
           ref={videoRef}
           src={playbackSrc}
@@ -234,24 +254,27 @@ export function VideoPlayer({
           }}
           onEnded={() => nextHref && router.push(nextHref)}
         />
+      )}
 
-      <button
+      {!isEmbeddedPlayer && (
+        <button
         type="button"
         aria-label={playing ? 'Pausar' : 'Reproduzir'}
         onClick={handleSurfaceClick}
         onDoubleClick={handleSurfaceDoubleClick}
-        className={`absolute inset-0 z-0 outline-none ${isBloggerPlayer ? 'pointer-events-none' : ''}`}
-      />
+        className="absolute inset-0 z-0 outline-none"
+        />
+      )}
 
-      <div
+      {!isEmbeddedPlayer && <div
         aria-hidden="true"
         className={`pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-1 bg-gradient-to-b from-background/90 to-transparent p-4 pb-16 transition-opacity duration-300 md:p-6 ${hideUi ? 'opacity-0' : 'opacity-100'}`}
       >
         <p className="text-xs font-bold uppercase tracking-wide text-primary">{subtitle}</p>
         <p className="line-clamp-1 text-sm font-black md:text-lg">{title}</p>
-      </div>
+      </div>}
 
-      {waiting && !failed && !isBloggerPlayer && (
+      {waiting && !failed && !isEmbeddedPlayer && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           <Loader2 className="size-12 animate-spin text-primary" aria-label="Carregando" />
         </div>
