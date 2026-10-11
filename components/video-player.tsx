@@ -57,12 +57,13 @@ export function VideoPlayer({
 
   const isBloggerPlayer = /^https?:\/\/([a-z0-9-]+\.)?blogger\.com\/video\.g(?:\?|$)/i.test(src)
   const isAnidrivePlayer = /^https?:\/\/([a-z0-9-]+\.)?anidrive\.click(?:\/|$)/i.test(src)
+  const anidrivePlaybackSrc = isAnidrivePlayer ? `/api/anidrive?url=${encodeURIComponent(src)}` : src
   const bloggerToken = useMemo(() => {
     if (!isBloggerPlayer) return null
     try { return new URL(src).searchParams.get('token') } catch { return null }
   }, [isBloggerPlayer, src])
-  const playbackSrc = bloggerToken ? `/api/blogger?token=${encodeURIComponent(bloggerToken)}` : src
-  const isEmbeddedPlayer = isBloggerPlayer || isAnidrivePlayer
+  const playbackSrc = bloggerToken ? `/api/blogger?token=${encodeURIComponent(bloggerToken)}` : anidrivePlaybackSrc
+  const isEmbeddedPlayer = isBloggerPlayer
 
   const [attempt, setAttempt] = useState(0)
   const [playing, setPlaying] = useState(false)

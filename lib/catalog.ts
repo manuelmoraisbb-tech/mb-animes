@@ -159,6 +159,9 @@ export function getDownloadUrl(url: string, fileName: string) {
     const token = new URL(url).searchParams.get('token')
     return token ? `/api/blogger?token=${encodeURIComponent(token)}&name=${encodeURIComponent(fileName)}&download=1` : url
   }
+  if (/^https?:\/\/([a-z0-9-]+\.)?anidrive\.click(?:\/|$)/i.test(url)) {
+    return `/api/anidrive?url=${encodeURIComponent(url)}&name=${encodeURIComponent(fileName)}&download=1`
+  }
   return `/api/stream?url=${encodeURIComponent(url)}&download=${encodeURIComponent(fileName + ext)}`
 }
 
