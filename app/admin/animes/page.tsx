@@ -1,4 +1,6 @@
-import { getAllAnimes, getAnimeBySlug, slugify } from '@/lib/catalog'
+'use client'
+
+import { getAllAnimes } from '@/lib/catalog'
 import Link from 'next/link'
 
 export default function AdminAnimesPage() {

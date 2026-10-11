@@ -1,9 +1,16 @@
-import { getAllAnimes, getAnimeBySlug, type Anime } from '@/lib/catalog'
-import Link from 'next/link'
+'use client'
 
-export default function AdminEpisodesPage({ searchParams }: { searchParams?: { anime?: string } }) {
+import { getAllAnimes } from '@/lib/catalog'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
+
+export default function AdminEpisodesPage() {
   const animes = getAllAnimes()
-  const selectedSlug = searchParams?.anime || animes[0]?.slug
+  const [selectedSlug, setSelectedSlug] = useState(animes[0]?.slug || '')
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get('anime')
+    if (slug) setSelectedSlug(slug)
+  }, [])
   const selectedAnime = animes.find((anime) => anime.slug === selectedSlug) || animes[0]
 
   async function handleDelete(animeSlug: string, season: number, episodeNumber: number) {
