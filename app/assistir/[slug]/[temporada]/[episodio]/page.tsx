@@ -63,6 +63,7 @@ export default async function WatchPage({ params }: { params: Params }) {
           <VideoPlayer
             key={episode.url}
             src={getPlayableUrl(episode.url)}
+            episodeUrl={episode.url}
             poster={anime.poster}
             title={episode.name}
             subtitle={`${anime.title} · T${season.number} E${episode.number}`}

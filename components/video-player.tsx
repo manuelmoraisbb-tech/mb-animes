@@ -1,5 +1,6 @@
 'use client'
 
+import useSWR from 'swr'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -36,6 +37,7 @@ type WebkitVideo = HTMLVideoElement & { webkitEnterFullscreen?: () => void }
 
 export function VideoPlayer({
   src,
+  episodeUrl,
   poster,
   title,
   subtitle,
@@ -43,6 +45,7 @@ export function VideoPlayer({
   downloadHref,
 }: {
   src: string
+  episodeUrl?: string
   poster: string
   title: string
   subtitle: string
@@ -50,18 +53,23 @@ export function VideoPlayer({
   downloadHref: string
 }) {
   const router = useRouter()
+  const sourceUrl = episodeUrl || src
+  const extractKey = /^https?:\/\/([a-z0-9-]+\.)?animesonline\.io(?:\/|$)/i.test(sourceUrl) ? `/api/extract?u=${encodeURIComponent(sourceUrl)}` : null
+  const fetcher = (url: string) => fetch(url).then((response) => response.json())
+  const { data: extracted } = useSWR<{ title?: string; referer?: string; hls?: string[]; mp4?: Array<{ file: string; label: string }> }>(extractKey, fetcher)
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<WebkitVideo>(null)
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const clickTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const hlsRef = useRef<any>(null)
 
-  const isBloggerPlayer = /^https?:\/\/([a-z0-9-]+\.)?blogger\.com\/video\.g(?:\?|$)/i.test(src)
-  const isAnidrivePlayer = /^https?:\/\/([a-z0-9-]+\.)?anidrive\.click(?:\/|$)/i.test(src)
-  const anidrivePlaybackSrc = isAnidrivePlayer ? `/api/anidrive?url=${encodeURIComponent(src)}` : src
+  const isBloggerPlayer = /^https?:\/\/([a-z0-9-]+\.)?blogger\.com\/video\.g(?:\?|$)/i.test(sourceUrl)
+  const isAnidrivePlayer = /^https?:\/\/([a-z0-9-]+\.)?anidrive\.click(?:\/|$)/i.test(sourceUrl)
+  const anidrivePlaybackSrc = isAnidrivePlayer ? `/api/anidrive?url=${encodeURIComponent(sourceUrl)}` : sourceUrl
   const bloggerToken = useMemo(() => {
     if (!isBloggerPlayer) return null
-    try { return new URL(src).searchParams.get('token') } catch { return null }
-  }, [isBloggerPlayer, src])
+    try { return new URL(sourceUrl).searchParams.get('token') } catch { return null }
+  }, [isBloggerPlayer, sourceUrl])
   const playbackSrc = bloggerToken ? `/api/blogger?token=${encodeURIComponent(bloggerToken)}` : anidrivePlaybackSrc
   const isEmbeddedPlayer = isBloggerPlayer
 
@@ -80,6 +88,46 @@ export function VideoPlayer({
   const [fullscreen, setFullscreen] = useState(false)
   const [controlsVisible, setControlsVisible] = useState(true)
   const [flash, setFlash] = useState<{ key: number; label: string } | null>(null)
+  const [qualityLevels, setQualityLevels] = useState<Array<{ index: number; label: string }>>([])
+  const [quality, setQuality] = useState(-1)
+
+  useEffect(() => {
+    let cancelled = false
+    const video = videoRef.current
+    if (!extracted || !video) return
+    if (!extracted.hls?.[0]) {
+      const fallback = extracted.mp4?.[0]?.file
+      if (fallback) video.src = `/api/proxy?u=${encodeURIComponent(fallback)}&r=${encodeURIComponent(extracted.referer || sourceUrl)}`
+      return
+    }
+    import('hls.js').then(({ default: Hls }) => {
+      if (cancelled) return
+      hlsRef.current?.destroy()
+      const hls = new Hls({ maxBufferLength: 30 })
+      hlsRef.current = hls
+      hls.loadSource(`/api/proxy?u=${encodeURIComponent(extracted.hls![0])}&r=${encodeURIComponent(extracted.referer || sourceUrl)}`)
+      hls.attachMedia(video)
+      hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+        setQualityLevels(data.levels.map((level: { height?: number; bitrate: number }, index: number) => ({ index, label: level.height ? `${level.height}p` : `${Math.round(level.bitrate / 1000)}kbps` })))
+        video.play().catch(() => {})
+      })
+      hls.on(Hls.Events.ERROR, (_event, details) => {
+        if (!details.fatal) return
+        const fallback = extracted.mp4?.[0]?.file
+        if (fallback) {
+          hls.destroy()
+          hlsRef.current = null
+          video.src = `/api/proxy?u=${encodeURIComponent(fallback)}&r=${encodeURIComponent(extracted.referer || sourceUrl)}`
+          video.play().catch(() => {})
+        } else setFailed(true)
+      })
+    })
+    return () => { cancelled = true; hlsRef.current?.destroy(); hlsRef.current = null }
+  }, [extracted, sourceUrl])
+
+  useEffect(() => {
+    if (hlsRef.current) hlsRef.current.currentLevel = quality
+  }, [quality])
 
   const showControls = useCallback(() => {
     setControlsVisible(true)
@@ -367,6 +415,21 @@ export function VideoPlayer({
           </span>
 
           <div className="ml-auto flex items-center gap-1 md:gap-2">
+            {qualityLevels.length > 1 && (
+              <label className="flex items-center gap-1 text-xs font-bold text-foreground/90">
+                <span className="sr-only">Qualidade</span>
+                <select
+                  value={quality}
+                  aria-label="Qualidade do vídeo"
+                  onChange={(event) => setQuality(Number(event.target.value))}
+                  className="max-w-20 rounded border border-foreground/20 bg-background/80 px-1.5 py-1 text-xs"
+                >
+                  <option value={-1}>Auto</option>
+                  {qualityLevels.map((level) => <option key={level.index} value={level.index}>{level.label}</option>)}
+                </select>
+              </label>
+            )}
+
             {nextHref && (
               <ControlButton label="Próximo episódio" onClick={() => router.push(nextHref)}>
                 <SkipForward className="size-5 fill-current" />
