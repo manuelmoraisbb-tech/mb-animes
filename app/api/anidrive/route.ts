@@ -40,9 +40,20 @@ function findConfig(html: string) {
 }
 
 async function resolve(source: string) {
-  const page = new URL(source)
+  let page = new URL(source)
+  let referer = 'https://animesonline.io/'
+  if (!/(^|\.)anidrive\.click$/i.test(page.hostname)) {
+    const episodeResponse = await fetch(page, { cache: 'no-store', headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,*/*' } })
+    if (!episodeResponse.ok) return null
+    const episodeHtml = await episodeResponse.text()
+    const iframe = /<iframe\b[^>]*?(?:data-src|src)\s*=\s*(["'])([\s\S]*?)\1[^>]*>/i.exec(episodeHtml)
+    const iframeUrl = iframe?.[2]?.replace(/&amp;/g, '&')
+    if (!iframeUrl || !/\banidrive\.click\b/i.test(iframeUrl)) return null
+    referer = page.toString()
+    page = new URL(iframeUrl, page)
+  }
   if (!/(^|\.)anidrive\.click$/i.test(page.hostname)) return null
-  const response = await fetch(page, { cache: 'no-store', headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,*/*', Referer: 'https://anidrive.click/' } })
+  const response = await fetch(page, { cache: 'no-store', headers: { 'User-Agent': USER_AGENT, Accept: 'text/html,*/*', Referer: referer } })
   if (!response.ok) return null
   const config = findConfig(await response.text())
   if (!config) return null

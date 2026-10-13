@@ -86,10 +86,11 @@ async function extract(source: string) {
   let referer = 'https://animesonline.io/'
   if (!new URL(source).hostname.includes('anidrive')) {
     const page = await get(source)
-    const match = /<iframe[^>]+(?:data-src|src)="(https:\/\/[^" ]*anidrive[^" ]+)"/i.exec(page)
-    if (!match) throw new Error('iframe do anidrive não encontrado na página')
+    const iframe = /<iframe\b[^>]*?(?:data-src|src)\s*=\s*(["'])([\s\S]*?)\1[^>]*>/i.exec(page)
+    const iframeUrl = iframe?.[2]?.replace(/&amp;/g, '&')
+    if (!iframeUrl || !/\banidrive\.click\b/i.test(iframeUrl)) throw new Error('iframe do anidrive não encontrado na página')
     referer = source
-    url = match[1].replace(/&amp;/g, '&')
+    url = new URL(iframeUrl, source).toString()
   }
   const config = findConfig(await get(url, referer))
   if (!config) throw new Error('AniDrivePlayerConfig não encontrado (formato mudou?)')
