@@ -243,10 +243,10 @@ export function VideoPlayer({
       onMouseLeave={() => playing && setControlsVisible(false)}
       className={`group relative aspect-video w-full select-none overflow-hidden bg-background ${hideUi ? 'cursor-none' : ''} ${fullscreen ? 'h-full' : ''}`}
     >
-      {isAnidrivePlayer ? (
+      {false ? (
         <iframe
           key={attempt}
-          src={src}
+          src={anidrivePlaybackSrc}
           title={`Episódio: ${title}`}
           allow="autoplay; fullscreen; picture-in-picture"
           allowFullScreen
